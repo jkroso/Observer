@@ -1,0 +1,27 @@
+{
+	"name": "Observer",
+	"title": "Observer",
+	"description": "A pub/sub module with hierarchical topic structure",
+	"version": "0.1.0",
+	"homepage": "https://github.com/jkroso/Observer",
+	"author": {
+		"name": "Jakeb Rosoman",
+		"email": "jkroso@gmail.com"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git://github.com/jkroso/Observer.git"
+	},
+	"bugs": {
+		"url": "https://trello.com/board/observer/4fa884cc292236f33846b649"
+	},
+	"licenses": [
+		{
+			"type": "MIT",
+			"url": "https://github.com/jkroso/Observer/master/LICENSE-MIT"
+		}
+	],
+	"dependencies": {
+	},
+	"keywords": []
+}
