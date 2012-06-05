@@ -44,67 +44,66 @@ define(['../lib/Observer'], function(Observer) { 'use strict';
 		} catch (e) {
 			ok(false)
 		}
-
 	})
 
 	test( "multiple subscriptions", function() {
-		expect( 4 );
+		expect( 4 )
 
 		subject.subscribe( "sub-a-1 sub-a-2 sub-a-3", function() {
-			ok( true );
-		});
-		subject.publish( "sub-a-1" );
+			ok( true )
+		})
+		subject.publish( "sub-a-1" )
 
 		subject.subscribe( "sub-b-1 sub-b-2", function() {
-			ok( true );
-		});
+			ok( true )
+		})
 		
 		// Test for Ticket #18
 		subject.subscribe( "sub-b-1 sub-b-3", function() {
-			ok( true );
-		});
+			ok( true )
+		})
 		
-		subject.publish( "sub-b-2" );
-		subject.publish( "sub-b-2" );
-		subject.publish( "sub-b-3" );
+		subject.publish( "sub-b-2" )
+		subject.publish( "sub-b-2" )
+		subject.publish( "sub-b-3" )
 	})
 
 	test( "various ways of unsubscribing a specific function", function() {
-		expect( 4 );
-		var order = 0;
+		expect( 4 )
+		var order = 0
 
 		subject.subscribe( "unsubscribe", function() {
-			strictEqual( order, 0, "first subscriber called" );
-			order++;
-		});
+			strictEqual( order, 0, "first subscriber called" )
+			order++
+		})
 		var fn = function() {
-			ok( false, "removed by original reference" );
-			order++;
-		};
-		subject.subscribe( "unsubscribe", fn );
+			ok( false, "removed by original reference" )
+			order++
+		}
+		subject.subscribe( "unsubscribe", fn )
 		subject.subscribe( "unsubscribe", function() {
-			strictEqual( order, 1, "second subscriber called" );
-			order++;
-		});
+			strictEqual( order, 1, "second subscriber called" )
+			order++
+		})
 		var fn2 = subject.subscribe( "unsubscribe", function() {
-			ok( false, "removed by returned reference" );
-			order++;
-		});
-		subject.unsubscribe( "unsubscribe", fn );
-		subject.unsubscribe( "unsubscribe", fn2 );
+			ok( false, "removed by returned reference" )
+			order++
+		})
+		subject.unsubscribe( "unsubscribe", fn )
+		subject.unsubscribe( "unsubscribe", fn2 )
 		try {
-			subject.unsubscribe( "unsubscribe", function() {});
-			ok( true, "no error with invalid handler" );
+			subject.unsubscribe( "unsubscribe", function() {})
+			ok( true, "no error with invalid handler" )
 		} catch ( e ) {
-			ok( false, "error with invalid handler" );
+			ok( false, "error with invalid handler" )
 		}
 		try {
-			subject.unsubscribe( "unsubscribe2", function() {});
-			ok( true, "no error with invalid topic" );
+			subject.unsubscribe( "unsubscribe2", function() {})
+			ok( true, "no error with invalid topic" )
 		} catch ( e ) {
-			ok( false, "error with invalid topic" );
+			ok( false, "error with invalid topic" )
 		}
-		subject.publish( "unsubscribe" );
+		subject.publish( "unsubscribe" )
 	})
 
 	test('Can unsubscribe anonamous functions while leaving named functions', function () {
@@ -139,11 +138,11 @@ define(['../lib/Observer'], function(Observer) { 'use strict';
 
 		subject.subscribe( "racy", function() {
 			ok( true, "first" )
-		});
+		})
 		subject.subscribe( "racy", racer )
 		subject.subscribe( "racy", function() {
 			ok( true, "third" )
-		});
+		})
 		subject.publish( "racy" )
 	})
 
@@ -151,20 +150,20 @@ define(['../lib/Observer'], function(Observer) { 'use strict';
 		expect( 7 )
 		subject.subscribe( "continuation", function() {
 			ok( true, "first subscriber called" )
-		});
+		})
 		subject.subscribe( "continuation", function() {
 			ok( true, "continued after no return value" )
-			return true;
+			return true
 		})
 		strictEqual( subject.publish( "continuation" ), true,
 			"return true when subscriptions are not stopped" )
 
 		subject.subscribe( "continuation", function(event) {
 			ok( true, "continued after returning true" )
-			event.stopPropagation()
-		});
+			return false
+		})
 		subject.subscribe( "continuation", function() {
-			ok( false, "continued after stopPropagation" )
+			ok( false, "continued after returning false" )
 		})
 		strictEqual( subject.publish( "continuation" ), false,
 			"return false when subscriptions are stopped" )
@@ -211,37 +210,62 @@ define(['../lib/Observer'], function(Observer) { 'use strict';
 			strictEqual( this, fn, "function" )
 		}, {context:fn})
 		subject.publish( "context" )
-	});
+	})
 
 	test( "data", function() {
-		subject.subscribe( "data", function( event ) {
-			strictEqual( event.data.string, "hello", "string passed" )
-			strictEqual( event.data.number, 5, "number passed" )
-			deepEqual( event.data.object, {
+		subject.subscribe( "data", function( data ) {
+			strictEqual( data.string, "hello", "string passed" )
+			strictEqual( data.number, 5, "number passed" )
+			deepEqual( data.object, {
 				foo: "bar",
 				baz: "qux"
 			}, "object passed" )
-			event.data.string = "goodbye"
-			event.data.object.baz = "quux"
-		});
-		subject.subscribe( "data", function( event ) {
-			strictEqual( event.data.string, "goodbye", "string changed" )
-			strictEqual( event.data.number, 5, "number unchanged" )
-			deepEqual( event.data.object, {
+			data.string = "goodbye"
+			data.object.baz = "quux"
+		})
+		subject.subscribe( "data", function( data ) {
+			strictEqual( data.string, "goodbye", "string changed" )
+			strictEqual( data.number, 5, "number unchanged" )
+			deepEqual( data.object, {
 				foo: "bar",
 				baz: "quux"
 			}, "object changed" )
-		});
+		})
 
 		var obj = {
 			foo: "bar",
 			baz: "qux"
-		};
+		}
 		subject.publish( "data", {string: "hello", number:5, object: obj} )
 		deepEqual( obj, {
 			foo: "bar",
 			baz: "quux"
 		}, "object updated" )
+	})
+
+	test('Specificity ordering', function() {
+		expect(5)
+		var order = 0
+		subject.subscribe('a.b.c.d', function (data) {
+			strictEqual(order, 0, 'fourth level')
+			order++
+		})
+		subject.subscribe('a.b.c', function (data) {
+			strictEqual(order, 1, 'third level')
+			order++
+		})
+		subject.subscribe('a.b', function (data) {
+			strictEqual(order, 2, 'second level')
+			order++
+		})
+		subject.subscribe('a', function (data) {
+			strictEqual(order, 3, 'first level')
+			order++
+		})
+		subject.subscribe(function (data) {
+			strictEqual(order, 4, 'top level no topic')
+		})
+		subject.publish('a.b.c.d', 'Some data')
 	})
 
 })
