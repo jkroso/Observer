@@ -265,7 +265,19 @@ define(['../lib/Observer'], function(Observer) { 'use strict';
 		subject.subscribe(function (data) {
 			strictEqual(order, 4, 'top level no topic')
 		})
-		subject.publish('a.b.c.d', 'Some data')
+		subject.publish('a.b.c.d.e.f.g', 'Some data')
+	})
+
+	test('Clear sub-topic subscriptions', function() {
+		expect(1)
+		subject.subscribe( "unsubscribeNull", function() {
+			ok( true, "This was supposed to stay" )
+		})
+		subject.subscribe( "unsubscribeNull.not", function() {
+			ok( false, "removed by topic clear" )
+		})
+		subject.unsubscribe('unsubscribeNull.not')
+		subject.publish( "unsubscribeNull.not" )
 	})
 
 })
