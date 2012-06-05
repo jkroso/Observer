@@ -21,7 +21,7 @@ define(['../lib/Observer'], function(Observer) { 'use strict';
 			notStrictEqual(actual, expected, [message])
 			raises(block, [expected], [message])
 	*/
-	
+	window.observer = new Observer()
 	var subject
 	
 	function yup () {
@@ -179,7 +179,7 @@ define(['../lib/Observer'], function(Observer) { 'use strict';
 		subject.subscribe( "priority", function() {
 			strictEqual( order, 3, "priority 15; #1" )
 			order++
-		}, {priority:15} )
+		}, 15 )
 		subject.subscribe( "priority", function() {
 			strictEqual( order, 2, "priority default; #2" )
 			order++
@@ -187,11 +187,11 @@ define(['../lib/Observer'], function(Observer) { 'use strict';
 		subject.subscribe( "priority", function() {
 			strictEqual( order, 0, "priority 1; #1" )
 			order++
-		}, {priority:1} )
+		}, 1 )
 		subject.subscribe( "priority", function() {
 			strictEqual( order, 4, "priority 15; #2" )
 			order++
-		}, {priority:15} )
+		}, 15 )
 		subject.publish( "priority" )
 	})
 
@@ -203,12 +203,12 @@ define(['../lib/Observer'], function(Observer) { 'use strict';
 		subject.subscribe( "context", function() {
 			strictEqual( this, window, "default context" )
 		})
-		subject.subscribe( "context", function() {
+		subject.subscribe( "context", obj,function() {
 			strictEqual( this, obj, "object" )
-		}, {context:obj})
-		subject.subscribe( "context", function() {
+		})
+		subject.subscribe( "context", fn, function() {
 			strictEqual( this, fn, "function" )
-		}, {context:fn})
+		})
 		subject.publish( "context" )
 	})
 
@@ -262,7 +262,7 @@ define(['../lib/Observer'], function(Observer) { 'use strict';
 			strictEqual(order, 3, 'first level')
 			order++
 		})
-		subject.subscribe(function (data) {
+		subject.subscribe('*', function (data) {
 			strictEqual(order, 4, 'top level no topic')
 		})
 		subject.publish('a.b.c.d.e.f.g', 'Some data')
