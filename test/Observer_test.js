@@ -262,7 +262,7 @@ define(['../lib/Observer'], function(Observer) { 'use strict';
 			strictEqual(order, 3, 'first level')
 			order++
 		})
-		subject.subscribe('*', function (data) {
+		subject.subscribe(function (data) {
 			strictEqual(order, 4, 'top level no topic')
 		})
 		subject.publish('a.b.c.d.e.f.g', 'Some data')
@@ -270,14 +270,76 @@ define(['../lib/Observer'], function(Observer) { 'use strict';
 
 	test('Clear sub-topic subscriptions', function() {
 		expect(1)
-		subject.subscribe( "unsubscribeNull", function() {
+		subject.on( "unsubscribeNull", function() {
 			ok( true, "This was supposed to stay" )
 		})
-		subject.subscribe( "unsubscribeNull.not", function() {
+		subject.on( "unsubscribeNull.not", function() {
 			ok( false, "removed by topic clear" )
 		})
-		subject.unsubscribe('unsubscribeNull.not')
+		subject.off('unsubscribeNull.not')
 		subject.publish( "unsubscribeNull.not" )
+	})
+
+	test('Error checking', function () {
+		expect(8)
+		
+		function noArgs () {
+			subject.on()
+		}
+		raises(noArgs, 'Insufficient arguments')
+		
+		function nonFuncCallback1 () {
+			subject.on('test', 3)
+		}
+		raises(nonFuncCallback1, 'Bad callback')
+		
+		function nonFuncCallback2 () {
+			subject.on(3)
+		}
+		raises(nonFuncCallback2, 'Bad callback')
+		
+		function nonObjectContext1 () {
+			subject.on('test', 2, function () {}, 1)
+		}
+		try {
+			nonObjectContext1()
+		} catch (e) {
+			ok(false, 'should not throw an erro')
+		}
+		
+		function nonObjectContext2 () {
+			subject.on('test', 2, function () {})
+		}
+		try {
+			nonObjectContext2()
+		} catch (e) {
+			ok(false, 'should not throw an erro')
+		}
+		
+		function nonStringTopic1 () {
+			subject.on(1, function () {})
+		}
+		raises(nonStringTopic1, 'Non string topic 2 args')
+		
+		function nonStringTopic2 () {
+			subject.on(1, function () {}, 1)
+		}
+		raises(nonStringTopic2, 'Incorrect argument format', 'Non string topic 3 args')
+		
+		function nonStringTopic3 () {
+			subject.on(1, {}, function () {}, 1)
+		}
+		raises(nonStringTopic3, 'Incorrect argument format', 'Non string topic 4 args')
+		
+		function incorrectPriority1 () {
+			subject.on('test', function () {}, {})
+		}
+		raises(incorrectPriority1, 'Incorrect argument format', 'Bad priority')
+		
+		function incorrectPriority2 () {
+			subject.on('test', {}, function () {}, 'priority')
+		}
+		raises(incorrectPriority2, 'Incorrect argument format', 'Bad priority')
 	})
 
 })
