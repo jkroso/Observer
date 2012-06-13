@@ -173,7 +173,7 @@ define(['../lib/Observer'], function(Observer) { 'use strict';
 	})
 
 	test( "priority", function() {
-		expect( 5 )
+		expect( 6 )
 		var order = 0
 		subject.subscribe( "priority", function() {
 			strictEqual( order, 3, "priority default; #1" )
@@ -195,6 +195,9 @@ define(['../lib/Observer'], function(Observer) { 'use strict';
 			strictEqual( order, 2, "priority 1; #2" )
 			order++
 		}, 1 )
+		subject.subscribe( "priority", function() {
+			strictEqual( order, 5, "priority -1; #1" )
+		}, -Infinity )
 		subject.publish( "priority" )
 	})
 
