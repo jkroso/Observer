@@ -63,9 +63,9 @@ define(['../lib/Observer'], function(Observer) { 'use strict';
 			ok( true )
 		})
 		
-		subject.do( "sub-b-2" )
-		subject.do( "sub-b-2" )
-		subject.do( "sub-b-3" )
+		subject.run( "sub-b-2" )
+		subject.run( "sub-b-2" )
+		subject.run( "sub-b-3" )
 	})
 
 	test( "various ways of unsubscribing a specific function", function() {

@@ -141,18 +141,19 @@ define(function () { 'use strict';
             return true
         },
 
-        // A quicker version of publish designed to trigger top level topics as quickly as possible
-        do : function ( topic, data ) {
+        // _Method_ __run__ A quicker version of publish designed to trigger top level topics as quickly as possible
+        //   
+        //   +   __String__ `topic` the event type
+        //   +   __...?__ `data` any data you want passed to the callbacks
+        run : function ( topic, data ) {
             // By getting the sub reference immediatly we don't need to worry about subscriptions 
             // changing since both subscribe and unsubscribe copy the listener array rather than augment it
-            var topicObject = this.subscriptions[topic]
-            if (topicObject) {
-                var listeners = topicObject._listeners,
-                    len = listeners.length - 1,
-                    subscription
+            if (topic = this.subscriptions[topic]) {
+                var listeners = topic._listeners,
+                    len = listeners.length - 1
                 if (len !== -1) {
                     do {
-                        (subscription = listeners[len]).callback.call( subscription.context, data )
+                        listeners[len].trigger(data)
                     } while ( len-- )
                 }
             }
