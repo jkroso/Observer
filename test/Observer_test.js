@@ -130,19 +130,22 @@ define(['../lib/Observer'], function(Observer) { 'use strict';
 
 	test( "unsubscribe during publish", function() {
 		expect( 3 )
+		var order = 0
 
 		function racer() {
-			ok( true, "second" )
-			subject.unsubscribe( "racy", racer )
+			strictEqual(order, 2, 'subs not affected')
 		}
 
 		subject.subscribe( "racy", function() {
-			ok( true, "first" )
+			strictEqual(order, 0)
+			order++
 		})
-		subject.subscribe( "racy", racer )
-		subject.subscribe( "racy", function() {
-			ok( true, "third" )
+		subject.subscribe( "racy", function () {
+			subject.unsubscribe( "racy", racer )
+			strictEqual(order, 1)
+			order++
 		})
+		subject.subscribe( "racy", racer)
 		subject.publish( "racy" )
 	})
 
@@ -177,21 +180,21 @@ define(['../lib/Observer'], function(Observer) { 'use strict';
 			order++
 		})
 		subject.subscribe( "priority", function() {
-			strictEqual( order, 3, "priority 15; #1" )
+			strictEqual( order, 3, "priority 1; #1" )
 			order++
-		}, 15 )
+		}, 1 )
 		subject.subscribe( "priority", function() {
 			strictEqual( order, 2, "priority default; #2" )
 			order++
 		})
 		subject.subscribe( "priority", function() {
-			strictEqual( order, 0, "priority 1; #1" )
+			strictEqual( order, 0, "priority 10; #1" )
+			order++
+		}, 10 )
+		subject.subscribe( "priority", function() {
+			strictEqual( order, 4, "priority 1; #2" )
 			order++
 		}, 1 )
-		subject.subscribe( "priority", function() {
-			strictEqual( order, 4, "priority 15; #2" )
-			order++
-		}, 15 )
 		subject.publish( "priority" )
 	})
 

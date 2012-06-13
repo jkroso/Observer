@@ -1,7 +1,7 @@
-/*  
-[Check the tests](../test/Observer.html "Observer.html")  
-________________________________________________________________________________________________
-*/
+/*! Observer - v0.1.0 - 2012-06-13
+* https://github.com/jkroso/Observer
+* Copyright (c) 2012 Jakeb Rosoman; Licensed MIT */
+
 define(function () { 'use strict';
 
     function Topic () {
