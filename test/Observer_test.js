@@ -64,8 +64,18 @@ define(['../lib/Observer'], function(Observer) { 'use strict';
 		})
 		
 		subject.run( "sub-b-2" )
-		subject.run( "sub-b-2" )
-		subject.run( "sub-b-3" )
+		subject.publish( "sub-b-2" )
+		subject.publish( "sub-b-3" )
+	})
+
+	test( 'Quick publish A.K.A `run`', function () {
+		expect( 1 )
+
+		subject.subscribe( "sub-a-1", function() {
+			ok( true )
+		})
+
+		subject.run( "sub-a-1" )
 	})
 
 	test( "various ways of unsubscribing a specific function", function() {
