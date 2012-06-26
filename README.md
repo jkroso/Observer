@@ -5,8 +5,8 @@ An AMD pub/sub module with hierarchical topic structure
 ## Getting Started
 Download the [production version][min] or the [development version][max].
 
-[min]: https://raw.github.com/Jake/Observer/master/dist/Observer.min.js
-[max]: https://raw.github.com/Jake/Observer/master/dist/Observer.js
+[min]: https://raw.github.com/jkroso/Observer/master/dist/Observer.min.js
+[max]: https://raw.github.com/jkroso/Observer/master/dist/Observer.js
 
 ## Documentation
 Interface is similar to _Amplify.core_ except you can recursively create sub topics. To do so you just seperate subtopics with fullstops.

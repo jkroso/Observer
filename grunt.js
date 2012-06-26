@@ -11,6 +11,18 @@ module.exports = function(grunt) { 'use strict';
 				'* Copyright (c) <%= grunt.template.today("yyyy") %> <%= pkg.author.name %>;' +
 				' Licensed <%= _.pluck(pkg.licenses, "type").join(", ") %> */'
 		},
+		shell: {
+			docco: {
+				command: 'docco'+
+				' lib/Observer.js'+
+				' test/Observer_test.js',
+				stderr: true,
+				failOnError: true
+			},
+			_options: {
+				stdout: console.log
+			}
+		},
 		lint: {
 			files: ['lib/**/*.js', 'test/**/*.js']
 		},
@@ -58,8 +70,6 @@ module.exports = function(grunt) { 'use strict';
 		uglify: {}
 	});
 
-	// Default task.
-	grunt.registerTask('default', 'lint concat min');
-	grunt.registerTask('all', 'lint qunit concat min');
+	grunt.registerTask('default', 'concat min shell')
 
 };

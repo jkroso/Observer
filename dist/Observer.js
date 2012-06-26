@@ -1,4 +1,4 @@
-/*! Observer - v0.1.0 - 2012-06-13
+/*! Observer - v0.1.0 - 2012-06-16
 * https://github.com/jkroso/Observer
 * Copyright (c) 2012 Jakeb Rosoman; Licensed MIT */
 
@@ -39,39 +39,31 @@ define(function () { 'use strict';
                 check
             switch (typeof callback) {
             case 'function':
-                check = functionChecker
+                check = function (listenerData) {
+                    return listenerData.callback !== callback
+                }
                 break;
             case 'string':
-                check = nameChecker
+                check = function (listenerData) {
+                    return listenerData.callback.name !== callback
+                }
                 break
             case 'object':
-                check = objectChecker
+                check = function (listenerData) {
+                    return listenerData !== callback
+                }
                 break
             default:
                 // if the user didn't pass a callback, all listeners will be removed
-                check = passer
-                break
+                check = function () {
+                    return false
+                }
             }
-            
-            // Because the topic now references a new object any publication processes will not be affected
-            this._listeners = listeners.filter(function (sub) {
-                return !check(sub, callback)
-            })
+
+            this._listeners = listeners.filter(check)
         }
-    }
-    
-    function functionChecker (listenerData, callback) {
-        return listenerData.callback === callback
-    }
-    function nameChecker (listenerData, callback) {
-        return listenerData.callback.name === callback
-    }
-    function objectChecker (listenerData, callback) {
-        return listenerData === callback
-    }
-    function passer () {
-        return true
-    }
+    } 
+
 
     function Subscription (context, callback, priority) {
         this.context = context
@@ -81,16 +73,21 @@ define(function () { 'use strict';
     // All new subscriptions are returned to the user from the subscribe function. Therefore, the subscription prototype is a good place to add smarts
     Subscription.prototype = {
         trigger : function (data) {
-            // __NOTE:__ Using `apply` is 25% - 45% slower than call and 30% - 80% slower than invocation, 
-            // [test 1](http://jsperf.com/apply-vs-call-vs-invoke/9 "jsperf apply vs call vs invoke"),
-            // [test 2](http://jsperf.com/function-invocation-regular-call-apply-new "Function invocation: regular, call, apply, new")  
+            // [Call is faster than apply](http://jsperf.com/apply-vs-call-vs-invoke/9 "jsperf apply vs call vs invoke")
             return this.callback.call(this.context, data)
         }
         // TODO: add an unsubscribe method
     }
     
-    function Subject () {
-        this.subscriptions = new Topic()
+    // The constructor can be used both to create new subjects and to turn arbitrary objects into observables
+    function Subject ( targetObject ) {
+        if (typeof targetObject === 'object') {
+            targetObject.publish = Subject.prototype.publish
+            targetObject.run = Subject.prototype.run
+            targetObject.on = Subject.prototype.on
+            targetObject.off = Subject.prototype.off
+        }
+        (targetObject || this).subscriptions = new Topic()
     }
     Subject.prototype = {
 
@@ -203,18 +200,18 @@ define(function () { 'use strict';
                 throw 'Incorrect argument format'
             }
             // No error checking for correct context type since the user may want `this` to equal something weird
-            // No need to throw error for incorrect topic since accessing `split` on a non-string will throw an error
             
+            // No need to throw error for incorrect topic since accessing `split` on a non-string will throw an error anyway
             topics = topics.split(' ')
             var listenerData = new Subscription(context, callback, priority),
                 topicObject = this.subscriptions,
                 topicLength = topics.length
 
-
             if (topics[0] === '') {
                 // Install to top level
                 topicObject.insertListener(listenerData)
             } else {
+                
                 // Multiple subscriptions can be set at the same time, in fact it is recommended as they end up sharing memory this way
                 topics.forEach(function (topic) {
                     var topicObject = this.subscriptions
