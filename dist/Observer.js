@@ -16,14 +16,29 @@ define(function () { 'use strict';
     }
     
     function call (node, topic, data) {
-        if (topic[0]) {
-            if (node[topic[0]]) {
-                if (call(node[topic[0]], topic.slice(1), data) === false) {
-                    return false
-                }
+        var listeners = node._listeners,
+            len
+        
+        if (len = node[topic[0]]) {
+            if (call(len, topic.slice(1), data) === false) {
+                return false
             }
         }
-        return node.invokeListeners(data)
+        
+        len = listeners.length - 1
+        // [Performance test](http://jsperf.com/while-vs-if "loop setup cost")
+        if (len !== -1) {
+            // ...and trigger each subscription, from highest to lowest priority
+            do {
+                // Returning false from a handler will prevent any further subscriptions from being notified
+                if ((topic = listeners[len]).callback.call(topic.context, data) === false) {
+                    return false
+                }
+            } while (len--)
+        }
+
+        // If we made it this far it means no subscriptions canceled propagation. So we return true to let the user know
+        return true
     }
 
     Subject.prototype = {
