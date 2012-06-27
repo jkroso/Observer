@@ -15,6 +15,31 @@ define(function () { 'use strict';
         (targetObject || this).__base__ = new Topic()
     }
     
+    function call (node, topic, data) {
+        var listeners = node._listeners,
+            len
+        
+        if (len = node[topic.shift()]) {
+            if (call(len, topic, data) === false) {
+                return false
+            }
+        }
+        
+        len = listeners.length - 1
+        // [Performance test](http://jsperf.com/while-vs-if "loop setup cost")
+        if (len !== -1) {
+            // ...and trigger each subscription, from highest to lowest priority
+            do {
+                // Returning false from a handler will prevent any further subscriptions from being notified
+                if ((node = listeners[len]).callback.call(node.context, data) === false) {
+                    return false
+                }
+            } while (len--)
+        }
+
+        // If we made it this far it means no subscriptions canceled propagation. So we return true to let the user know
+        return true
+    }
 
     Subject.prototype = {
 
@@ -24,35 +49,7 @@ define(function () { 'use strict';
         //   +   __String__ `topic` the event type
         //   +   __...?__ `data` any data you want passed to the callbacks  
         publish : function ( topic, data ) {
-            
-            function call (node) {
-                var listeners = node._listeners,
-                    len
-                
-                if (len = node[topic.shift()]) {
-                    if (call(len) === false) {
-                        return false
-                    }
-                }
-                
-                len = listeners.length - 1
-                // [Performance test](http://jsperf.com/while-vs-if "loop setup cost")
-                if (len !== -1) {
-                    // ...and trigger each subscription, from highest to lowest priority
-                    do {
-                        // Returning false from a handler will prevent any further subscriptions from being notified
-                        if ((node = listeners[len]).callback.call(node.context, data) === false) {
-                            return false
-                        }
-                    } while (len--)
-                }
-
-                // If we made it this far it means no subscriptions canceled propagation. So we return true to let the user know
-                return true
-            }
-            
-            topic = topic.split('.')
-            return call(this.__base__)
+            return call(this.__base__, topic.split('.'), data)
         },
 
         // _Method_ __run__ A quicker version of publish designed to trigger top level topics as quickly as possible
