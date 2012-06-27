@@ -37,7 +37,8 @@ define(function () { 'use strict';
             topic = topic.split('.')
             var topicNode = this.__base__,
                 len = topic.length,
-                i = 0
+                i = 0,
+                listeners
 
             while (i < len) {
                 if (topicNode.hasOwnProperty(topic[i])) {
@@ -47,8 +48,17 @@ define(function () { 'use strict';
                 }
             }
             do {
-                if (topicNode.invokeListeners(data) === false) {
-                    return false
+                listeners = topicNode._listeners,
+                len = listeners.length - 1
+                // [Performance test](http://jsperf.com/while-vs-if "loop setup cost")
+                if (len !== -1) {
+                    // ...and trigger each subscription, from highest to lowest priority
+                    do {
+                        // Returning false from a handler will prevent any further subscriptions from being notified
+                        if ((i = listeners[len]).callback.call(i.context, data) === false) {
+                            return false
+                        }
+                    } while (len--)
                 }
             } while ((topicNode = topicNode._parent) !== undefined)
 
