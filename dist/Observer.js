@@ -14,6 +14,18 @@ define(function () { 'use strict';
         }
         (targetObject || this).__base__ = new Topic()
     }
+    
+    function call (node, topic, data) {
+        if (topic[0]) {
+            if (node[topic[0]]) {
+                if (call(node[topic[0]], topic.slice(1), data) === false) {
+                    return false
+                }
+            }
+        }
+        return node.invokeListeners(data)
+    }
+
     Subject.prototype = {
 
         // _Method_ __publish__ `boolean` If any callback returns false we immediately exit otherwise we simply return true to indicate
@@ -22,7 +34,7 @@ define(function () { 'use strict';
         //   +   __String__ `topic` the event type
         //   +   __...?__ `data` any data you want passed to the callbacks  
         publish : function ( topic, data ) {
-            return this.__base__.emit(topic.split('.'), 0, data)
+            return call(this.__base__, topic.split('.'), data)
         },
 
         // _Method_ __run__ A quicker version of publish designed to trigger top level topics as quickly as possible
@@ -144,11 +156,13 @@ define(function () { 'use strict';
         constructor : Subject
     }
     
+    
     function Subscription (context, callback, priority) {
         this.context = context
         this.callback = callback
         this.priority = priority
     }
+
     // All new subscriptions are returned to the user from the subscribe function. Therefore, the subscription prototype is a good place to add smarts
     Subscription.prototype = {
         trigger : function (data) {
@@ -157,6 +171,7 @@ define(function () { 'use strict';
         }
         // TODO: add an unsubscribe method
     }
+    
     
     function Topic () {
         this._listeners = []
@@ -215,27 +230,18 @@ define(function () { 'use strict';
             this._listeners = this._listeners.filter(check)
         },
 
-        emit : function ( directions, location, data ) {
+        invokeListeners : function ( data ) {
             var listeners = this._listeners,
-                next = this[directions[location]]
-
-            if (next) {
-                if (next.emit(directions, location + 1, data) === false) {
-                    // Propagate the cancelation
-                    return false
-                }
-            }
-
-            location = listeners.length - 1
+                len = listeners.length - 1
             // [Performance test](http://jsperf.com/while-vs-if "loop setup cost")
-            if (location !== -1) {
+            if (len !== -1) {
                 // ...and trigger each subscription, from highest to lowest priority
                 do {
                     // Returning false from a handler will prevent any further subscriptions from being notified
-                    if (listeners[location].trigger(data) === false) {
+                    if (listeners[len].trigger(data) === false) {
                         return false
                     }
-                } while (location--)
+                } while (len--)
             }
 
             // If we made it this far it means no subscriptions canceled propagation. So we return true to let the user know
