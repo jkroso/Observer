@@ -1,4 +1,4 @@
-/*! Observer - v0.1.0 - 2012-06-27
+/*! Observer - v0.1.0 - 2012-06-28
 * https://github.com/jkroso/Observer
 * Copyright (c) 2012 Jakeb Rosoman; Licensed MIT */
 
@@ -34,7 +34,25 @@ define(function () { 'use strict';
         //   +   __String__ `topic` the event type
         //   +   __...?__ `data` any data you want passed to the callbacks  
         publish : function ( topic, data ) {
-            return call(this.__base__, topic.split('.'), data)
+            topic = topic.split('.')
+            var topicNode = this.__base__,
+                len = topic.length,
+                i = 0
+
+            while (i < len) {
+                if (topicNode.hasOwnProperty(topic[i])) {
+                    topicNode = topicNode[topic[i++]]
+                } else {
+                    break
+                }
+            }
+            do {
+                if (topicNode.invokeListeners(data) === false) {
+                    return false
+                }
+            } while ((topicNode = topicNode._parent) !== undefined)
+
+            return true
         },
 
         // _Method_ __run__ A quicker version of publish designed to trigger top level topics as quickly as possible
@@ -111,7 +129,7 @@ define(function () { 'use strict';
                     this.insertListener(listenerData)
                 } else {
                     if (!this.hasOwnProperty(direction)) {
-                        this[direction] = new Topic()
+                        this[direction] = new Topic(this)
                     }
                     seek.call(this[direction], cdr(topic))
                 }
@@ -173,8 +191,9 @@ define(function () { 'use strict';
     }
     
     
-    function Topic () {
+    function Topic ( parentNode ) {
         this._listeners = []
+        this._parent = parentNode
     }
 
     Topic.prototype = {
