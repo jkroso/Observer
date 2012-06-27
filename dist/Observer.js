@@ -3,121 +3,6 @@
 * Copyright (c) 2012 Jakeb Rosoman; Licensed MIT */
 
 define(function () { 'use strict';
-
-    function insertListener (subject, subscriptionData) {
-        var listeners = subject._listeners.slice(),
-            len = listeners.length,
-            priority = subscriptionData.priority,
-            i = 0,
-            added = false
-        
-        for ( ; i < len; i++ ) {
-            if ( listeners[i].priority >= priority ) {
-                listeners.splice( i , 0, subscriptionData )
-                added = true
-                break
-            }
-        }
-
-        if ( !added ) {
-            listeners.push(subscriptionData)
-        }
-
-        // Because the topic now references a new object any publication processes will not be affected
-        subject._listeners = listeners
-    }
-
-    function removeListener (subject, callback) {
-        var check
-
-        switch (typeof callback) {
-        case 'function':
-            check = function (listenerData) {
-                return listenerData.callback !== callback
-            }
-            break;
-        case 'string':
-            check = function (listenerData) {
-                return listenerData.callback.name !== callback
-            }
-            break
-        case 'object':
-            check = function (listenerData) {
-                return listenerData !== callback
-            }
-            break
-        default:
-            // if the user didn't pass a callback, all listeners will be removed
-            check = function () {
-                return false
-            }
-        }
-
-        subject._listeners = subject._listeners.filter(check)
-    }
-
-    function Subscription (context, callback, priority) {
-        this.context = context
-        this.callback = callback
-        this.priority = priority
-    }
-    // All new subscriptions are returned to the user from the subscribe function. Therefore, the subscription prototype is a good place to add smarts
-    Subscription.prototype = {
-        trigger : function (data) {
-            // [Call is faster than apply](http://jsperf.com/apply-vs-call-vs-invoke/9 "jsperf apply vs call vs invoke")
-            return this.callback.call(this.context, data)
-        }
-        // TODO: add an unsubscribe method
-    }
-    
-    function car ( topic ) {
-        var i = topic.indexOf('.')
-        if (i === -1) {
-            return topic
-        } else {
-            return topic.substr(0, i)
-        }
-    }
-    function cdr ( topic ) {
-        var i = topic.indexOf('.')
-        if (i === -1) {
-            return ''
-        } else {
-            return topic.substr(i + 1)
-        }
-    }
-    
-    function Topic () {
-        this._listeners = []
-    }
-
-    function emit ( base, topic, data ) {
-        var listeners = base._listeners,
-            len = listeners.length - 1
-
-        if (topic) {
-            if (base = base[car(topic)]) {
-                if (emit(base, cdr(topic), data) === false) {
-                    // Propagate the cancelation
-                    return false
-                }
-            }
-        }
-
-        // [Performance test](http://jsperf.com/while-vs-if "loop setup cost")
-        if (len !== -1) {
-            // ...and trigger each subscription, from highest to lowest priority
-            do {
-                // Returning false from a handler will prevent any further subscriptions from being notified
-                if (listeners[len].trigger(data) === false) {
-                    return false
-                }
-            } while (len--)
-        }
-
-        // If we made it this far it means no subscriptions canceled propagation. So we return true to let the user know
-        return true
-    }
     
     // The constructor can be used both to create new subjects and to turn arbitrary objects into observables
     function Subject ( targetObject ) {
@@ -137,7 +22,7 @@ define(function () { 'use strict';
         //   +   __String__ `topic` the event type
         //   +   __...?__ `data` any data you want passed to the callbacks  
         publish : function ( topic, data ) {
-            return emit(this.__base__, topic, data)
+            return emit(this.__base__, topic.split('.'), 0, data)
         },
 
         // _Method_ __run__ A quicker version of publish designed to trigger top level topics as quickly as possible
@@ -145,14 +30,15 @@ define(function () { 'use strict';
         //   +   __String__ `topic` the event type
         //   +   __...?__ `data` any data you want passed to the callbacks
         run : function ( topic, data ) {
+            var len
             // By getting the sub reference immediatly we don't need to worry about subscriptions 
             // changing since both subscribe and unsubscribe copy the listener array rather than augment it
             if (topic = this.__base__[topic]) {
-                var listeners = topic._listeners,
-                    len = listeners.length - 1
+                topic = topic._listeners
+                len = topic.length - 1
                 if (len !== -1) {
                     do {
-                        if (listeners[len].trigger(data) === false) {
+                        if (topic[len].trigger(data) === false) {
                             return false
                         }
                     } while ( len-- )
@@ -257,11 +143,128 @@ define(function () { 'use strict';
         // Incase the user doesn't know where the pub/sub instance came from
         constructor : Subject
     }
+    
+    function Topic () {
+        this._listeners = []
+    }
+    
+    function Subscription (context, callback, priority) {
+        this.context = context
+        this.callback = callback
+        this.priority = priority
+    }
+    // All new subscriptions are returned to the user from the subscribe function. Therefore, the subscription prototype is a good place to add smarts
+    Subscription.prototype = {
+        trigger : function (data) {
+            // [Call is faster than apply](http://jsperf.com/apply-vs-call-vs-invoke/9 "jsperf apply vs call vs invoke")
+            return this.callback.call(this.context, data)
+        }
+        // TODO: add an unsubscribe method
+    }
+
+
+    function insertListener (subject, subscriptionData) {
+        var listeners = subject._listeners.slice(),
+            len = listeners.length,
+            priority = subscriptionData.priority,
+            i = 0,
+            added = false
+        
+        for ( ; i < len; i++ ) {
+            if ( listeners[i].priority >= priority ) {
+                listeners.splice( i , 0, subscriptionData )
+                added = true
+                break
+            }
+        }
+
+        if ( !added ) {
+            listeners.push(subscriptionData)
+        }
+
+        // Because the topic now references a new object any publication processes will not be affected
+        subject._listeners = listeners
+    }
+
+    function removeListener (subject, callback) {
+        var check
+
+        switch (typeof callback) {
+        case 'function':
+            check = function (listenerData) {
+                return listenerData.callback !== callback
+            }
+            break;
+        case 'string':
+            check = function (listenerData) {
+                return listenerData.callback.name !== callback
+            }
+            break
+        case 'object':
+            check = function (listenerData) {
+                return listenerData !== callback
+            }
+            break
+        default:
+            // if the user didn't pass a callback, all listeners will be removed
+            check = function () {
+                return false
+            }
+        }
+
+        subject._listeners = subject._listeners.filter(check)
+    }
+    
+    function car ( topic ) {
+        var i = topic.indexOf('.')
+        if (i === -1) {
+            return topic
+        } else {
+            return topic.substr(0, i)
+        }
+    }
+
+    function cdr ( topic ) {
+        var i = topic.indexOf('.')
+        if (i === -1) {
+            return ''
+        } else {
+            return topic.substr(i + 1)
+        }
+    }
+    
+    function emit ( base, directions, location, data ) {
+        var listeners = base._listeners,
+            len = listeners.length - 1
+
+        if (base = base[directions[location]]) {
+            if (emit(base, directions, location + 1, data) === false) {
+                // Propagate the cancelation
+                return false
+            }
+        }
+
+        // [Performance test](http://jsperf.com/while-vs-if "loop setup cost")
+        if (len !== -1) {
+            // ...and trigger each subscription, from highest to lowest priority
+            do {
+                // Returning false from a handler will prevent any further subscriptions from being notified
+                if (listeners[len].trigger(data) === false) {
+                    return false
+                }
+            } while (len--)
+        }
+
+        // If we made it this far it means no subscriptions canceled propagation. So we return true to let the user know
+        return true
+    }
+
     // Create aliases
     Subject.prototype.unsubscribe = Subject.prototype.off
     Subject.prototype.subscribe = Subject.prototype.on
 
     // Make supporting constructors available on Subject so as to allow extension developers to subclass them
     Subject.Subscription = Subscription
+
     return Subject
 })
