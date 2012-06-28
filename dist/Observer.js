@@ -34,33 +34,44 @@ define(function () { 'use strict';
         //   +   __String__ `topic` the event type
         //   +   __...?__ `data` any data you want passed to the callbacks  
         publish : function ( topic, data ) {
-            topic = topic.split('.')
             var topicNode = this.__base__,
-                len = topic.length,
-                i = 0,
-                listeners
+                listeners, len, i
 
-            while (i < len) {
-                if (topicNode.hasOwnProperty(topic[i])) {
-                    topicNode = topicNode[topic[i++]]
-                } else {
-                    break
+            if ( topicNode.hasOwnProperty(topic) ) {
+                topicNode = topicNode[topic]
+            } else {
+                
+                topic = topic.split('.')
+                len = topic.length
+                i = 0
+                
+                while ( i < len ) {
+                    if ( topicNode.hasOwnProperty(topic[i]) ) {
+                        topicNode = topicNode[topic[i++]]
+                    } else {
+                        break
+                    }
                 }
             }
-            do {
+
+            while ( topicNode ) {
+                
                 listeners = topicNode._listeners,
                 len = listeners.length - 1
+                
                 // [Performance test](http://jsperf.com/while-vs-if "loop setup cost")
-                if (len !== -1) {
+                if ( len !== -1 ) {
                     // ...and trigger each subscription, from highest to lowest priority
                     do {
                         // Returning false from a handler will prevent any further subscriptions from being notified
-                        if ((i = listeners[len]).callback.call(i.context, data) === false) {
+                        if ( (i = listeners[len]).callback.call(i.context, data) === false ) {
                             return false
                         }
-                    } while (len--)
+                    } while ( len-- )
                 }
-            } while ((topicNode = topicNode._parent) !== undefined)
+
+                topicNode = topicNode._parent
+            }
 
             return true
         },
@@ -130,21 +141,30 @@ define(function () { 'use strict';
             
             var listenerData = new Subscription(context, callback, priority)
 
-            // Multiple subscriptions can be set at the same time, in fact it is recommended as they end up sharing memory this way
-            // No need to throw error for incorrect topic since accessing `split` on a non-string will throw an error anyway
-            topics.split(' ').forEach(function seek (topic) {
-                var direction = car(topic)
-                
-                if (!direction) {
-                    this.insertListener(listenerData)
-                } else {
-                    if (!this.hasOwnProperty(direction)) {
-                        this[direction] = new Topic(this)
-                    }
-                    seek.call(this[direction], cdr(topic))
-                }
+            if ( topics === '' ) {
+                // Install to top level
+                this.__base__.insertListener(listenerData)
+            } else {
+                // Multiple subscriptions can be set at the same time, in fact it is recommended as they end up sharing memory this way
+                // No need to throw error for incorrect topic since accessing `split` on a non-string will throw an error anyway
+                topics.split(' ').forEach(function (topic) {
+                    var topicObject = this.__base__
 
-            }, this.__base__)
+                    var directions = topic.split('.')
+                    // find the correct topic to insert the subscription on
+                    for ( var location = 0, destination = directions.length; location < destination; location++ ) {
+                        // Create a new topic if one does not already exist
+                        if ( topicObject.hasOwnProperty([directions[location]]) ) {
+                            topicObject = topicObject[directions[location]]
+                        } else {
+                            topicObject = topicObject.createSubTopic(directions[location], directions.slice(0, location + 1).join('.'))
+                        }
+                    }
+
+                    topicObject.insertListener(listenerData)
+
+                }, this)
+            }
 
             // since the object which ultimately gets subscribed is returned you can catch it in a variable and use that later to unsubscribe in a more specific fashion than
             // would otherwise be if unsubscribing by callback, which removes all matching callbacks on the given topic. Returning the subscribed objects is also a plus 
@@ -207,6 +227,17 @@ define(function () { 'use strict';
     }
 
     Topic.prototype = {
+
+        createSubTopic : function ( subName, fullAddress ) {
+            this[subName] = new Topic(this)
+            var topicObject = this
+            while ( topicObject._parent ) {
+                topicObject = topicObject._parent
+            }
+            // Create top level mapping
+            return topicObject[fullAddress] = this[subName]
+        },
+
         insertListener : function ( subscriptionData ) {
             var listeners = this._listeners.slice(),
                 len = listeners.length,
