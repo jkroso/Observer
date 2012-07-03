@@ -1,4 +1,4 @@
-/*! Observer - v0.1.0 - 2012-06-28
+/*! Observer - v0.1.0 - 2012-07-04
 * https://github.com/jkroso/Observer
 * Copyright (c) 2012 Jakeb Rosoman; Licensed MIT */
 
@@ -47,7 +47,7 @@ define(function () { 'use strict';
                 len = listeners.length - 1
                 
                 // [Performance test](http://jsperf.com/while-vs-if "loop setup cost")
-                if ( len !== -1 ) {
+                if ( len >= 0 ) {
                     // ...and trigger each subscription, from highest to lowest priority
                     do {
                         // Returning false from a handler will prevent any further subscriptions from being notified
@@ -57,7 +57,7 @@ define(function () { 'use strict';
                     } while ( len-- )
                 }
                 
-            } while ( topicNode = topicNode._parent )
+            } while ( (topicNode = topicNode._parent) !== undefined )
 
             return true
         },
@@ -127,30 +127,30 @@ define(function () { 'use strict';
             
             var listenerData = new Subscription(context, callback, priority)
 
-            if ( topics === '' ) {
-                // Install to top level
-                this.__base__.insertListener(listenerData)
-            } else {
-                // Multiple subscriptions can be set at the same time, in fact it is recommended as they end up sharing memory this way
-                // No need to throw error for incorrect topic since accessing `split` on a non-string will throw an error anyway
-                topics.split(' ').forEach(function (topic) {
-                    var topicObject = this.__base__
+            // Multiple subscriptions can be set at the same time, in fact it is recommended as they end up sharing memory this way
+            // No need to throw error for incorrect topic since accessing `split` on a non-string will throw an error anyway
+            topics.split(' ').forEach(function (topic) {
+                var topicObject = this.__base__,
+                    directions = topic.split('.')
 
-                    var directions = topic.split('.')
-                    // find the correct topic to insert the subscription on
-                    for ( var location = 0, destination = directions.length; location < destination; location++ ) {
-                        // Create a new topic if one does not already exist
-                        if ( topicObject.hasOwnProperty([directions[location]]) ) {
-                            topicObject = topicObject[directions[location]]
-                        } else {
-                            topicObject = topicObject.createSubTopic(directions[location], directions.slice(0, location + 1).join('.'))
-                        }
+                // find the correct topic to insert the subscription on
+                for ( var location = 0, destination = directions.length; location < destination; location++ ) {
+                    
+                    if ( directions[location] === '' ) {
+                        break
                     }
 
-                    topicObject.insertListener(listenerData)
+                    // Create a new topic if one does not already exist
+                    if ( topicObject.hasOwnProperty([directions[location]]) ) {
+                        topicObject = topicObject[directions[location]]
+                    } else {
+                        topicObject = topicObject.createSubTopic(directions[location], directions.slice(0, location + 1).join('.'))
+                    }
+                }
 
-                }, this)
-            }
+                topicObject.insertListener(listenerData)
+
+            }, this)
 
             // since the object which ultimately gets subscribed is returned you can catch it in a variable and use that later to unsubscribe in a more specific fashion than
             // would otherwise be if unsubscribing by callback, which removes all matching callbacks on the given topic. Returning the subscribed objects is also a plus 
@@ -168,23 +168,23 @@ define(function () { 'use strict';
         //    + If you pass a function then all subscriptions with that function will be removed
         off : function ( topics, callback ) {
             if (typeof topics !== 'string') {
-                throw 'Need tp provide a topic'
+                throw 'Need to provide a topic'
             }
 
-            topics.split(' ').forEach(function seek (topic) {
-                var direction = car(topic)
-                
-                if (!direction) {
-                    this.removeListener(callback)
-                } else {
-                    // Stop if we are heading down a non-existant path
-                    if (!this.hasOwnProperty(direction)) {
-                        return
+            topics.split(' ').forEach(function (topic) {
+                var topicObject = this.__base__,
+                    directions = topic.split('.')
+
+                // find the correct topic to insert the subscription on
+                for ( var location = 0, destination = directions.length; location < destination; location++ ) {
+                    // Create a new topic if one does not already exist
+                    if ( topicObject.hasOwnProperty([directions[location]]) ) {
+                        topicObject = topicObject[directions[location]]
                     }
-                    seek.call(this[direction], cdr(topic))
                 }
 
-            }, this.__base__)
+                topicObject.removeListener(callback)
+            }, this)
         },
         // Incase the user doesn't know where the pub/sub instance came from
         constructor : Subject
@@ -294,24 +294,6 @@ define(function () { 'use strict';
             return true
         }
     }
-
-    function car ( topic ) {
-        var i = topic.indexOf('.')
-        if (i === -1) {
-            return topic
-        } else {
-            return topic.substr(0, i)
-        }
-    }
-
-    function cdr ( topic ) {
-        var i = topic.indexOf('.')
-        if (i === -1) {
-            return ''
-        } else {
-            return topic.substr(i + 1)
-        }
-    } 
 
     // Create aliases
     Subject.prototype.unsubscribe = Subject.prototype.off
