@@ -71,13 +71,13 @@ define(['../lib/Observer'], function(Observer) { 'use strict';
 
 	test('Mixin', function () {
 		expect(1)
-		var mixee = {}
-		Observer(mixee)
-		mixee.on("sub-a", function() {
+		function Mix () {}
+		var mixee = new Mix
+		Observer(mixee, Mix.prototype)
+		Mix.prototype.on.call(mixee, "sub-a", function() {
 			ok( true )
 		})
 		mixee.publish( "sub-a" )
-		mixee = null
 	})
 
 	test( 'Quick publish A.K.A `run`', function () {
