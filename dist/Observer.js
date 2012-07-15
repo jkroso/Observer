@@ -5,18 +5,24 @@
 define(function () { 'use strict';
     
     // The constructor can be used both to create new subjects and to turn arbitrary objects into observables
-    function Observer (targetObject, prototype) {
-        var self = this
-        if ( ! (this instanceof Observer) ) {
-            if ( targetObject ) {
-                self = targetObject
-                Object.keys(Observer.prototype).forEach(function (key) {
-                    Object.defineProperty(prototype || self, key, { value: Observer.prototype[key] })
-                })
-            } else
-                return new Observer
-        }
-        return Object.defineProperty(self, '_base', { value: new Topic })
+    function Observer (addMethods) {
+        if ( addMethods )
+            Observer.methods(typeof addMethods === 'object' ? addMethods : this)
+        return Object.defineProperty(this, '_base', {
+            value: new Topic, 
+            writable:true,
+            configurable:true
+        })
+    }
+    Observer.methods = function (target) {
+        Object.keys(Observer.prototype).forEach(function (key) {
+            Object.defineProperty(target, key, { 
+                value: Observer.prototype[key], 
+                writable:true,
+                configurable:true 
+            })
+        })
+        return target
     }
 
     function forciblyFind ( directions, topic ) {
@@ -214,10 +220,10 @@ define(function () { 'use strict';
                 },
                 this._base
             )
-        },
-        constructor : Observer
+        }
     }
-    Object.defineProperty(Observer.prototype, 'constructor', { enumerable: false })
+    // Use property definer so it is enumerbale 
+    Object.defineProperty(Observer.prototype, 'constructor', { value: Observer })
     
     
     function Subscription (context, callback, priority) {
@@ -324,13 +330,6 @@ define(function () { 'use strict';
             return true
         }
     }
-
-    // Create aliases
-    Observer.prototype.unsubscribe = Observer.prototype.off
-    Observer.prototype.subscribe = Observer.prototype.on
-
-    // Make supporting constructors available on Subject so as to allow extension developers to subclass them
-    Observer.Subscription = Subscription
 
     return Observer
 })

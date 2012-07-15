@@ -70,14 +70,20 @@ define(['../lib/Observer'], function(Observer) { 'use strict';
 	})
 
 	test('Mixin', function () {
-		expect(1)
+		expect(3)
 		function Mix () {}
 		var mixee = new Mix
-		Observer(mixee, Mix.prototype)
-		Mix.prototype.on.call(mixee, "sub-a", function() {
+		Observer.call(mixee)
+		Observer.prototype.on.call(mixee, "sub-a", function() {
+			ok( true, 'should still have a functioning _base' )
+		})
+		ok( !mixee.on, 'Should not have on available' )
+		Observer.prototype.publish.call(mixee, "sub-a" )
+		Observer.call(mixee, Mix.prototype)
+		mixee.on("sub-b", function() {
 			ok( true )
 		})
-		mixee.publish( "sub-a" )
+		mixee.publish( "sub-b" )
 	})
 
 	test( 'Quick publish A.K.A `run`', function () {
