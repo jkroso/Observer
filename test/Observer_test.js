@@ -21,19 +21,16 @@ define(['../lib/Observer'], function(Observer) { 'use strict';
 			notStrictEqual(actual, expected, [message])
 			raises(block, [expected], [message])
 	*/
-	window.observer = new Observer()
+	window.Observer = Observer
 	var subject
 	
 	function yup () {
 		ok(true, 'message received')
 	}
 
-	module('', {
+	module(null, {
 		setup : function () {
 			subject = new Observer()
-		},
-		teardown : function () {
-			subject = null
 		}
 	})
 
@@ -45,7 +42,6 @@ define(['../lib/Observer'], function(Observer) { 'use strict';
 			ok(false)
 		}
 	})
-
 
 	test( "multiple subscriptions", function() {
 		expect( 4 )
@@ -178,6 +174,31 @@ define(['../lib/Observer'], function(Observer) { 'use strict';
 		})
 		subject.on( "racy", racer)
 		subject.publish( "racy" )
+	})
+
+	test('Once: single', function () {
+		expect( 1 )
+
+		subject.once("sub-a-1", function() {
+			ok( true, 'works with one subscription' )
+		})
+		subject.publish("sub-a-1")
+		subject.publish('sub-a-1')
+	})
+
+	test('Once: multiple' , function () {
+		expect( 3 )
+
+		subject.once( "sub-b-1 sub-b-2", function() {
+			ok( true, 'works with two subscriptions' )
+		})
+		
+		subject.publish( "sub-b-2" )
+		subject.publish( "sub-b-2" )
+		subject.publish( "sub-b-1" )
+		subject.publish( "sub-b-1" )
+
+		strictEqual(subject._base['sub-b-1']._listeners.length, 0,'No _listeners left')
 	})
 
 	test( "continuation", function() {
