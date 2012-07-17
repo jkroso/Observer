@@ -177,13 +177,14 @@ define(['../lib/Observer'], function(Observer) { 'use strict';
 	})
 
 	test('Once: single', function () {
-		expect( 1 )
+		expect( 2 )
 
 		subject.once("sub-a-1", function() {
 			ok( true, 'works with one subscription' )
 		})
 		subject.publish("sub-a-1")
 		subject.publish('sub-a-1')
+		strictEqual(subject._base['sub-a-1']._length, 0,'No listeners should remain')
 	})
 
 	test('Once: multiple' , function () {
@@ -195,10 +196,9 @@ define(['../lib/Observer'], function(Observer) { 'use strict';
 		
 		subject.publish( "sub-b-2" )
 		subject.publish( "sub-b-2" )
-		subject.publish( "sub-b-1" )
-		subject.publish( "sub-b-1" )
 
-		strictEqual(subject._base['sub-b-1']._listeners.length, 0,'No _listeners left')
+		strictEqual(subject._base['sub-b-1']._length, 0,'sub-b-1 should have been cleared even though it was never called')
+		strictEqual(subject._base['sub-b-2']._length, 0,'No sub-b-2 listeners should remain')
 	})
 
 	test( "continuation", function() {

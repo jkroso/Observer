@@ -1,4 +1,4 @@
-/*! Observer - v0.1.0 - 2012-07-17
+/*! Observer - v0.1.0 - 2012-07-18
 * https://github.com/jkroso/Observer
 * Copyright (c) 2012 Jakeb Rosoman; Licensed MIT */
 
@@ -76,25 +76,26 @@ define(function () { 'use strict';
                 len = topic.length
                 while ( i < len ) {
                     j = topic[i++]
+                    // hasOwnProprty is slow, but checking on type provides just as much safety so long as objects are kept out of the `topic` prototype chain
                     if ( typeof topicNode[j] === 'object' )
                         topicNode = topicNode[j]
                     else
                         break
                 }
-            }
+            } else
+                data = topic
+
             do {
-                // By getting the sub reference immediately we don't need to worry about subscriptions 
-                // changing since both subscribe and unsubscribe copy the listener array rather than augment it
-                i = topicNode._length - 1
+                // TopicNodes are immutable so we don't need to worry about them changing during publication
+                i = topicNode._length
                 // [Performance test](http://jsperf.com/while-vs-if "loop setup cost")
-                if ( i >= 0 ) {
-                    // ...and trigger each subscription, from highest to lowest priority
+                if ( i > 0 ) {
                     do {
                         // Returning false from a handler will prevent any further subscriptions from being notified
-                        if ( (topic = topicNode[i]).callback.call(topic.context, data) === false ) {
+                        if ( topicNode[--i].trigger(data) === false ) {
                             return false
                         }
-                    } while ( i-- )
+                    } while ( i > 0 )
                 }
             } while ( (topicNode = topicNode._parent) !== this )
 
@@ -106,23 +107,29 @@ define(function () { 'use strict';
         //   +   __String__ `topic` the event type
         //   +   __...?__ `data` any data you want passed to the callbacks
         run : function ( topic, data ) {
-            var topicNode = this._base, len
+            var topicNode = this._base, len, i, j
 
             if ( typeof topic === 'string' ) {
-                topic = new Generator(topic)
-                while ( (len = topic.next()) )
-                    if ( topicNode.hasOwnProperty(len) )
-                        topicNode = topicNode[len]
+                topic = topic.split('.')
+                i = 0
+                len = topic.length
+                while ( i < len ) {
+                    j = topic[i++]
+                    if ( typeof topicNode[j] === 'object' )
+                        topicNode = topicNode[j]
                     else
                         return false
-            }
-            len = topicNode._length - 1
-            if ( len >= 0 ) {
+                }
+            } else
+                data = topic
+
+            i = topicNode._length
+            if ( i > 0 ) {
                 do {
-                    if ( (topic = topicNode[len]).callback.call(topic.context, data) === false ) {
+                    if ( topicNode[--i].trigger(data) === false ) {
                         return false
                     }
-                } while ( len-- )
+                } while ( i > 0 )
             }
             return true
         },
@@ -174,6 +181,7 @@ define(function () { 'use strict';
             // for plug-in developers who can augment a subscriptions behavior after the fact
             return listenerData
         },
+        // Same api as on except as soon as one topic is triggered the listener will be removed from __all__ topics its topics
         once : function (topics, context, callback, priority) {
             switch ( arguments.length ) {  
                 case 3:
@@ -199,24 +207,20 @@ define(function () { 'use strict';
                     throw 'Insufficient arguments'
             }
             var listenerData = new Subscription(context, callback, priority)
+            listenerData._topics = []
+            listenerData.trigger = function (data) {
+                this._topics.forEach(function (topic) {
+                    topic.removeListener(this)
+                })
+                return this.callback.call(this.context, data)
+            }
             // I chose to use two subscriptions here instead of one as this way allows me to place the same subscriptions in each topic
             // If I had used a closure I wouldn't of been able to return one true subscription object representing the function the user asked to subscribe
             topics.split(' ').forEach(
                 function (directions) {
                     var topicObject = find(directions, this, true)
-                    var remover = new Subscription(
-                        window,
-                        function () {
-                            var topic = copy(topicObject) 
-                            topic.filter(function (subscription) {
-                                return subscription !== remover && subscription !== listenerData
-                            })
-                            topicObject.replace(topic)
-                        },
-                        listenerData.priority
-                    )
-                    topicObject = topicObject.insertListener(listenerData)
-                    topicObject = topicObject.insertListener(remover)
+                    listenerData._topics.push(topicObject)
+                    topicObject.insertListener(listenerData)
                 },
                 this._base
             )
@@ -290,14 +294,21 @@ define(function () { 'use strict';
 
     function copy (topic) {
         var clone = new Topic(topic._name, topic._parent),
-            len = topic._length
+            len = topic._length, topics
         while ( len-- ) {
-            // Indexed properties should remain enumerable
+            // Listeners should remain enumerable
             Object.defineProperty(clone, len, {
                 value : topic[len],
                 writable : true,
                 configurable : true
             })
+            // Update any listeners which care about the topics they belong to
+            topics = clone[len]._topics
+            if ( topics && topics.indexOf(topic) ) {
+                clone[len]._topics = topics.filter(function (t) {
+                    return t !== topic
+                })
+            }
         }
         clone._length = topic._length
         // Copy subtopics leaving them enumerable
