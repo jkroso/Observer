@@ -1,4 +1,4 @@
-/*! Observer - v0.1.0 - 2012-07-16
+/*! Observer - v0.1.0 - 2012-07-17
 * https://github.com/jkroso/Observer
 * Copyright (c) 2012 Jakeb Rosoman; Licensed MIT */
 
@@ -11,14 +11,8 @@ define(function () { 'use strict';
             Observer.methods(typeof includeMethods === 'object' ? includeMethods : this)
         return Object.defineProperties(this, {
             _base : {
-                value : new Topic(this, '_base'),
-                writable : true,
-                configurable : true
-            },
-            _map : {
-                value : new Map,
-                writable : true,
-                configurable : true
+                value : new Topic(null, this),
+                writable : true
             }
         })
     }
@@ -34,23 +28,35 @@ define(function () { 'use strict';
     }
 
     function find (directions, topic, useforce) {
-        var location = 0,
-            destination = directions.length,
-            next
-        if ( directions[0] !== '' ) {
-            while ( location < destination ) {
-                next = directions[location++]
-                if ( topic.hasOwnProperty(next) ) 
-                    topic = topic[next]
-                else {
-                    if ( useforce )
-                        topic = topic.createSubTopic(directions.slice(0, location).join('.'), next, topic)
-                    else
-                        break
-                }
-            }
-        }
+        var next
+        directions = new Generator(directions)
+        while ( (next = directions.next()) )
+            if ( topic.hasOwnProperty(next) )
+                topic = topic[next]
+            else
+                if ( useforce )
+                    topic = topic.createSubTopic(next)
+                else
+                    break
         return topic
+    }
+
+    function Generator (string) {
+        this.data = string
+        this._last = 0
+    }
+    Generator.prototype = {
+        next : function () {
+            var next = this.data.indexOf('.', this._last), result
+            if ( next === -1 ) {
+                result = this.data.slice(this._last)
+                this._last = this.data.length
+            } else {
+                result = this.data.slice(this._last, next)
+                this._last = next + 1
+            }
+            return result
+        }
     }
 
     Observer.prototype = {
@@ -61,26 +67,26 @@ define(function () { 'use strict';
         //   +   __String__ `topic` the event type
         //   +   __...?__ `data` any data you want passed to the callbacks  
         publish : function (topic, data) {
-            var topicNode = this._map.get(topic),
-                listeners, len
+            var topicNode = this._base, len
 
-            if ( !topicNode ) {
-                if ( !data ) {
-                    data = topic
-                    topic = ''
-                }
-                topicNode = find(topic.split('.'), this._base)
+            if ( typeof topic === 'string' ) {
+                topic = new Generator(topic)
+                while ( (len = topic.next()) )
+                    if ( topicNode.hasOwnProperty(len) )
+                        topicNode = topicNode[len]
+                    else
+                        break
             }
-
             do {
-                listeners = topicNode._listeners,
-                len = listeners.length - 1
+                // By getting the sub reference immediately we don't need to worry about subscriptions 
+                // changing since both subscribe and unsubscribe copy the listener array rather than augment it
+                len = topicNode._length - 1
                 // [Performance test](http://jsperf.com/while-vs-if "loop setup cost")
                 if ( len >= 0 ) {
                     // ...and trigger each subscription, from highest to lowest priority
                     do {
                         // Returning false from a handler will prevent any further subscriptions from being notified
-                        if ( (topic = listeners[len]).callback.call(topic.context, data) === false ) {
+                        if ( (topic = topicNode[len]).callback.call(topic.context, data) === false ) {
                             return false
                         }
                     } while ( len-- )
@@ -95,22 +101,25 @@ define(function () { 'use strict';
         //   +   __String__ `topic` the event type
         //   +   __...?__ `data` any data you want passed to the callbacks
         run : function ( topic, data ) {
-            var len
-            // By getting the sub reference immediately we don't need to worry about subscriptions 
-            // changing since both subscribe and unsubscribe copy the listener array rather than augment it
-            if ( topic = this._map.get(topic) ) {
-                topic = topic._listeners
-                len = topic.length - 1
-                if ( len >= 0 ) {
-                    do {
-                        if (topic[len].trigger(data) === false) {
-                            return false
-                        }
-                    } while ( len-- )
-                }
-                return true
+            var topicNode = this._base, len
+
+            if ( typeof topic === 'string' ) {
+                topic = new Generator(topic)
+                while ( (len = topic.next()) )
+                    if ( topicNode.hasOwnProperty(len) )
+                        topicNode = topicNode[len]
+                    else
+                        return false
             }
-            // If no topic exists `undefined` is returned
+            len = topicNode._length - 1
+            if ( len >= 0 ) {
+                do {
+                    if ( (topic = topicNode[len]).callback.call(topic.context, data) === false ) {
+                        return false
+                    }
+                } while ( len-- )
+            }
+            return true
         },
 
         //  _Method_ __on__ `listenerObject`
@@ -150,7 +159,7 @@ define(function () { 'use strict';
             // No need to throw error for incorrect topic since accessing `split` on a non-string will throw an error anyway
             topics.split(' ').forEach(
                 function (directions) {
-                    find(directions.split('.'), this, true).insertListener(listenerData)
+                    find(directions, this, true).insertListener(listenerData)
                 },
                 this._base
             )
@@ -185,21 +194,24 @@ define(function () { 'use strict';
                     throw 'Insufficient arguments'
             }
             var listenerData = new Subscription(context, callback, priority)
-
+            // I chose to use two subscriptions here instead of one as this way allows me to place the same subscriptions in each topic
+            // If I had used a closure I wouldn't of been able to return one true subscription object representing the function the user asked to subscribe
             topics.split(' ').forEach(
                 function (directions) {
-                    var topicObject = find(directions.split('.'), this, true)
+                    var topicObject = find(directions, this, true)
                     var remover = new Subscription(
                         window,
                         function () {
-                            topicObject._listeners = topicObject._listeners.filter(function (subscription) {
+                            var topic = copy(topicObject) 
+                            topic.filter(function (subscription) {
                                 return subscription !== remover && subscription !== listenerData
                             })
+                            topicObject.replace(topic)
                         },
                         listenerData.priority
                     )
-                    topicObject.insertListener(listenerData)
-                    topicObject.insertListener(remover)
+                    topicObject = topicObject.insertListener(listenerData)
+                    topicObject = topicObject.insertListener(remover)
                 },
                 this._base
             )
@@ -225,9 +237,11 @@ define(function () { 'use strict';
                     
             topics.split(' ').forEach(
                 function (topic) {
-                    this._map.get(topic) && this._map.get(topic).removeListener(callback)
+                    topic = find(topic, this, false)
+                    if ( topic )
+                        topic.removeListener(callback)
                 },
-                this
+                this._base
             )
         }
     }
@@ -246,107 +260,167 @@ define(function () { 'use strict';
     // All new subscriptions are returned to the user from the subscribe function. Therefore, the subscription prototype is a good place to add smarts
     Subscription.prototype = {
         trigger : function (data) {
-            // [Call is faster than apply](http://jsperf.com/apply-vs-call-vs-invoke/9 "jsperf apply vs call vs invoke")
             return this.callback.call(this.context, data)
         }
         // TODO: add an unsubscribe method
     }
     
     
-    function Topic (parent, name) {
+    function Topic (name, parent) {
         // Using discriptor to prevent non-subTopic properties from being enumerable
         Object.defineProperties(this, {
-            _listeners : { 
-                value : new Array,
-                writable : true
-            },
             _parent : {
-                value : parent
+                value : parent,
+                writable : true
             },
             _name : {
                 value : name
+            },
+            _length : {
+                value : 0,
+                writable : true
             }
         })
     }
 
+    function copy (topic) {
+        var clone = new Topic(topic._name, topic._parent),
+            len = topic._length
+        while ( len-- ) {
+            // Indexed properties should remain enumerable
+            Object.defineProperty(clone, len, {
+                value : topic[len],
+                writable : true,
+                configurable : true
+            })
+        }
+        clone._length = topic._length
+        // Copy subtopics leaving them enumerable
+        Object.keys(topic).forEach(function (key) {
+            clone[key] = topic[key]
+        })
+        return clone
+    }
+
     Topic.prototype = {
-
-        createSubTopic : function (address, name, parent) {
-            var head = this,
-                topic = new Topic(this, name)
-            while ( head._parent ) {
-                head = head._parent
-            }
-            // Create top level mapping
-            head._map.set(address, topic)
-            return this[name] = topic
+        createSubTopic : function (name) {
+            return this[name] = new Topic(name, this)
         },
-
+        splice : function (index, remove, data) {
+            this.shift(1 - remove, index, this._length -1)
+            Object.defineProperty(this, index, {
+                value : data,
+                writable : true,
+                configurable : true
+            })
+            return this
+        },
+        push : function (data) {
+            Object.defineProperty(this, this._length++, {
+                value : data,
+                writable : true,
+                configurable : true
+            })
+            return this
+        },
+        // Make the new version available within the event tree
+        replace : function (topic) {
+            this._parent[topic._name] = topic
+            // Refer children to their new parents memory location
+            Object.keys(topic).forEach(function (key) {
+                topic[key]._parent = topic
+            })
+            return this
+        },
+        shift : function (offset, first, last) {
+            if ( offset > 0 ) {
+                while ( last >= first ) {
+                    Object.defineProperty(this, last + offset, {
+                        value : this[last],
+                        writable : true,
+                        configurable : true
+                    });
+                    delete this[last--]
+                }
+            } else {
+                while ( first <= last ) {
+                    if ( first + offset >= 0  ) {
+                        Object.defineProperty(this, first + offset, {
+                            value : this[first],
+                            writable : true,
+                            configurable : true
+                        })
+                    }
+                    delete this[first++]
+                }
+            }
+            this._length += offset
+            return this
+        },
+        filter : function (check) {
+            for ( var i = 0; i < this._length; ) {
+                if ( !check(this[i++]) )
+                    this.shift(-1, i, this._length - 1)
+            }
+            return this
+        },
         insertListener : function ( subscriptionData ) {
-            var listeners = this._listeners.slice(),
-                len = listeners.length,
+            var clone = copy(this),
+                len = clone._length,
                 priority = subscriptionData.priority,
-                i = 0,
                 added = false
             
-            for ( ; i < len; i++ ) {
-                if ( listeners[i].priority >= priority ) {
-                    listeners.splice( i , 0, subscriptionData )
+            for ( var i=0; i < len; i++ ) {
+                if ( clone[i].priority >= priority ) {
+                    clone.splice(i, 0, subscriptionData)
                     added = true
                     break
                 }
             }
-
             if ( !added )
-                listeners.push(subscriptionData)
-
-            // Because the topic now references a new object any publication processes will not be affected
-            this._listeners = listeners
+                clone.push(subscriptionData)
+            
+            return this.replace(clone)
         },
-
         removeListener : function (callback) {
-            var check
-
-            switch (typeof callback) {
-            case 'function':
-                check = function (listenerData) {
-                    return listenerData.callback !== callback
-                }
-                break;
-            case 'string':
-                check = function (listenerData) {
-                    return listenerData.callback.name !== callback
-                }
-                break
-            case 'object':
-                check = function (listenerData) {
-                    return listenerData !== callback
-                }
-                break
-            default:
-                // if the user didn't pass a callback, all listeners will be removed
-                check = function () {
-                    return false
-                }
+            var check,
+                clone = copy(this)
+            switch ( typeof callback ) {
+                case 'function':
+                    check = function (listenerData) {
+                        return listenerData.callback !== callback
+                    }
+                    break
+                case 'string':
+                    check = function (listenerData) {
+                        return listenerData.callback.name !== callback
+                    }
+                    break
+                case 'object':
+                    check = function (listenerData) {
+                        return listenerData !== callback
+                    }
+                    break
+                default:
+                    // if the user didn't pass a callback, all listeners will be removed
+                    check = function () {
+                        return false
+                    }
             }
-
-            this._listeners = this._listeners.filter(check)
+            return this.replace(clone.filter(check))
         },
-
-        invokeListeners : function (data) {
-            var listeners = this._listeners,
-                len = listeners.length - 1
+        invoke : function (data) {
+            var len = this._length - 1
             // [Performance test](http://jsperf.com/while-vs-if "loop setup cost")
-            if (len !== -1) {
+            if ( len >= 0 ) {
                 // ...and trigger each subscription, from highest to lowest priority
                 do {
                     // Returning false from a handler will prevent any further subscriptions from being notified
-                    if (listeners[len].trigger(data) === false) {
+                    if (this[len].trigger(data) === false) {
                         return false
                     }
-                } while (len--)
+                } while ( len-- )
             }
-
             // If we made it this far it means no subscriptions canceled propagation. So we return true to let the user know
             return true
         }

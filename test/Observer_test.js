@@ -99,20 +99,20 @@ define(['../lib/Observer'], function(Observer) { 'use strict';
 		expect( 4 )
 		var order = 0
 
-		subject.on( "unsubscribe", function() {
+		subject.on( "unsubscribe", function one () {
 			strictEqual( order, 0, "first subscriber called" )
 			order++
 		})
-		var fn = function() {
+		var fn = function two () {
 			ok( false, "removed by original reference" )
 			order++
 		}
 		subject.on( "unsubscribe", fn )
-		subject.on( "unsubscribe", function() {
+		subject.on( "unsubscribe", function three () {
 			strictEqual( order, 1, "second subscriber called" )
 			order++
 		})
-		var fn2 = subject.on( "unsubscribe", function() {
+		var fn2 = subject.on( "unsubscribe", function four () {
 			ok( false, "removed by returned reference" )
 			order++
 		})
@@ -303,25 +303,25 @@ define(['../lib/Observer'], function(Observer) { 'use strict';
 
 	test('Specificity ordering', function() {
 		expect(5)
-		var order = 0
-		subject.on('a.b.c.d', function (data) {
-			strictEqual(order, 0, 'fourth level')
+		var order = 1
+		subject.on('a.b.c.d', function one (data) {
+			strictEqual(order, 1, 'fourth level')
 			order++
 		})
-		subject.on('a.b.c', function (data) {
-			strictEqual(order, 1, 'third level')
+		subject.on('a.b.c', function two (data) {
+			strictEqual(order, 2, 'third level')
 			order++
 		})
-		subject.on('a.b', function (data) {
-			strictEqual(order, 2, 'second level')
+		subject.on('a.b', function three (data) {
+			strictEqual(order, 3, 'second level')
 			order++
 		})
-		subject.on('a', function (data) {
-			strictEqual(order, 3, 'first level')
+		subject.on('a', function four (data) {
+			strictEqual(order, 4, 'first level')
 			order++
 		})
-		subject.on(function (data) {
-			strictEqual(order, 4, 'top level no topic')
+		subject.on(function five (data) {
+			strictEqual(order, 5, 'top level no topic')
 		})
 		subject.publish('a.b.c.d.e.f.g', 'Some data')
 	})
