@@ -67,29 +67,33 @@ define(function () { 'use strict';
         //   +   __String__ `topic` the event type
         //   +   __...?__ `data` any data you want passed to the callbacks  
         publish : function (topic, data) {
-            var topicNode = this._base, len
+            var topicNode = this._base, len, i, j
 
             if ( typeof topic === 'string' ) {
-                topic = new Generator(topic)
-                while ( (len = topic.next()) )
-                    if ( topicNode.hasOwnProperty(len) )
-                        topicNode = topicNode[len]
+                topic = topic.split(/\./)
+                i = 0
+                len = topic.length
+                while ( i < len ) {
+                    j = topic[i++]
+                    if ( typeof topicNode[j] === 'object' )
+                        topicNode = topicNode[j]
                     else
                         break
+                }
             }
             do {
                 // By getting the sub reference immediately we don't need to worry about subscriptions 
                 // changing since both subscribe and unsubscribe copy the listener array rather than augment it
-                len = topicNode._length - 1
+                i = topicNode._length - 1
                 // [Performance test](http://jsperf.com/while-vs-if "loop setup cost")
-                if ( len >= 0 ) {
+                if ( i >= 0 ) {
                     // ...and trigger each subscription, from highest to lowest priority
                     do {
                         // Returning false from a handler will prevent any further subscriptions from being notified
-                        if ( (topic = topicNode[len]).callback.call(topic.context, data) === false ) {
+                        if ( (topic = topicNode[i]).callback.call(topic.context, data) === false ) {
                             return false
                         }
-                    } while ( len-- )
+                    } while ( i-- )
                 }
             } while ( (topicNode = topicNode._parent) !== this )
 
