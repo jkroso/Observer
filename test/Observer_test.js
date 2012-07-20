@@ -23,10 +23,6 @@ define(['../lib/Observer'], function(Observer) { 'use strict';
 	*/
 	window.Observer = Observer
 	var subject
-	
-	function yup () {
-		ok(true, 'message received')
-	}
 
 	module(null, {
 		setup : function () {
@@ -37,7 +33,9 @@ define(['../lib/Observer'], function(Observer) { 'use strict';
 	test('Can subscribe', function () {
 		expect(0)
 		try {
-			subject.on('test', yup)
+			subject.on('test', function yup () {
+				ok(true, 'message received')
+			})
 		} catch (e) {
 			ok(false)
 		}
@@ -138,6 +136,9 @@ define(['../lib/Observer'], function(Observer) { 'use strict';
 		subject.on('test', function () {
 			ok(true, 'anonamous function ran')
 		})
+		function yup () {
+			ok(true, 'message received')
+		}
 		subject.publish('test')
 		subject.on('test', yup)
 		subject.off('test', '')
@@ -148,8 +149,11 @@ define(['../lib/Observer'], function(Observer) { 'use strict';
 
 	test('can multi-unsubscribe', function () {
 		expect(1)
-		subject.on('a b c', yup)
-		subject.off('a b', yup)
+
+		subject.on('a b c', function yup () {
+			ok(true, 'message received')
+		})
+		subject.off('a b', 'yup')
 		subject.publish('c')
 		subject.publish('b')
 		subject.publish('a')
@@ -184,7 +188,7 @@ define(['../lib/Observer'], function(Observer) { 'use strict';
 		})
 		subject.publish("sub-a-1")
 		subject.publish('sub-a-1')
-		strictEqual(subject._base['sub-a-1']._length, 0,'No listeners should remain')
+		strictEqual(subject._base['sub-a-1']._listeners.length, 0,'No listeners should remain')
 	})
 
 	test('Once: multiple' , function () {
@@ -197,8 +201,8 @@ define(['../lib/Observer'], function(Observer) { 'use strict';
 		subject.publish( "sub-b-2" )
 		subject.publish( "sub-b-2" )
 
-		strictEqual(subject._base['sub-b-1']._length, 0,'sub-b-1 should have been cleared even though it was never called')
-		strictEqual(subject._base['sub-b-2']._length, 0,'No sub-b-2 listeners should remain')
+		strictEqual(subject._base['sub-b-1']._listeners.length, 0,'sub-b-1 should have been cleared even though it was never called')
+		strictEqual(subject._base['sub-b-2']._listeners.length, 0,'No sub-b-2 listeners should remain')
 	})
 
 	test( "continuation", function() {

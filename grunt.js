@@ -27,7 +27,7 @@ module.exports = function(grunt) { 'use strict';
 			files: ['lib/**/*.js', 'test/**/*.js']
 		},
 		qunit: {
-			files: ['test/**/*.html']
+			files: ['test/Observer.html']
 		},
 		concat: {
 			dist: {
@@ -70,6 +70,6 @@ module.exports = function(grunt) { 'use strict';
 		uglify: {}
 	});
 
-	grunt.registerTask('default', 'concat min shell')
+	grunt.registerTask('default', 'concat min qunit shell')
 
 };
