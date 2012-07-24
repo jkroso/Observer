@@ -3,7 +3,7 @@
 /*global notDeepEqual:false, strictEqual:false, notStrictEqual:false, raises:false*/
 require.config({
 	paths: {
-		Observer    : 'http://localhost/Libraries/Observer/lib/Observer',
+		SignalTree  : 'http://localhost/Libraries/Observer/lib/SignalTree',
 		Lodash      : 'http://localhost/Libraries/lodash/lodash',
 		Subscription: 'http://localhost/Libraries/Observer/lib/Subscription',
 		Topic       : 'http://localhost/Libraries/Observer/lib/Topic'
@@ -27,7 +27,7 @@ require.config({
 		notStrictEqual(actual, expected, [message])
 		raises(block, [expected], [message])
 */
-require(['Observer'], function (Observer) {
+require(['SignalTree'], function (Observer) {
 
 	window.Observer = Observer
 	window.subject = null
@@ -49,7 +49,7 @@ require(['Observer'], function (Observer) {
 		}
 	})
 
-	test( "multiple subscriptions", function() {
+	test("multiple subscriptions", function() {
 		expect( 4 )
 
 		subject.on( "sub-a-1 sub-a-2 sub-a-3", function() {
@@ -61,7 +61,6 @@ require(['Observer'], function (Observer) {
 			ok( true )
 		})
 		
-		// Test for Ticket #18
 		subject.on( "sub-b-1 sub-b-3", function() {
 			ok( true )
 		})
@@ -72,33 +71,35 @@ require(['Observer'], function (Observer) {
 	})
 
 	test('Mixin', function () {
-		expect(3)
+		expect(2)
 		function Mix () {}
 		var mixee = new Mix
-		Observer.call(mixee)
-		Observer.prototype.on.call(mixee, "sub-a", function() {
-			ok( true, 'should still have a functioning _base' )
+		Observer.mixin(mixee)
+		mixee.on("sub-a", function() {
+			ok( true)
 		})
-		ok( !mixee.on, 'Should not have on available' )
-		Observer.prototype.publish.call(mixee, "sub-a" )
-		Observer.call(mixee, Mix.prototype)
+		mixee.publish("sub-a" )
+
+		Observer.methods(Mix.prototype)
+		mixee = new Mix
+		Observer.call(mixee)
 		mixee.on("sub-b", function() {
-			ok( true )
+			ok( true, 'bind methods' )
 		})
 		mixee.publish( "sub-b" )
 	})
 
-	test( 'Quick publish A.K.A `run`', function () {
+	test('Topics are singly invokable', function () {
 		expect( 1 )
 
 		subject.on( "sub-a-1", function() {
-			ok( false )
+			ok( false, 'this is a super topic and should not be run')
 		})
 		subject.on( "sub-a-1.lvl2", function() {
-			ok( true )
+			ok( true, 'You found me and I ran correctly when you asked me to' )
 		})
 
-		subject.run( "sub-a-1.lvl2" )
+		subject.get( "sub-a-1.lvl2" ).invoke()
 	})
 
 	test( "various ways of unsubscribing a specific function", function() {

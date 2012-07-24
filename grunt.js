@@ -14,7 +14,7 @@ module.exports = function(grunt) { 'use strict';
 		shell: {
 			docco: {
 				command: 'docco'+
-				' lib/Observer.js'+
+				' lib/SignalTree.js'+
 				' lib/Topic.js'+
 				' lib/Subscription.js'+
 				' test/Observer_test.js',
@@ -22,7 +22,7 @@ module.exports = function(grunt) { 'use strict';
 				failOnError: true
 			},
 			requirejs : {
-				command : 'cd lib && node ../r.js -o name=Observer out=../dist/Observer.js baseUrl=.',
+				command : 'cd lib && node ../r.js -o name=SignalTree out=../dist/Observer.js baseUrl=.',
 				stderr: true,
 				failOnError: true
 			},
@@ -55,6 +55,6 @@ module.exports = function(grunt) { 'use strict';
 		uglify: {}
 	});
 
-	grunt.registerTask('default', 'concat shell qunit')
+	grunt.registerTask('default', 'shell qunit')
 
 };
