@@ -22,7 +22,7 @@ module.exports = function(grunt) { 'use strict';
 				failOnError: true
 			},
 			requirejs : {
-				command : 'cd lib && node ../r.js -o name=SignalTree out=../dist/Observer.js baseUrl=.',
+				command : 'cd lib && node ../r.js -o name=SignalTree out=../dist/Observer.min.js baseUrl=.',
 				stderr: true,
 				failOnError: true
 			},
