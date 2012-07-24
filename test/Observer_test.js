@@ -1,28 +1,36 @@
 /*global QUnit:false, module:false, test:false, asyncTest:false, expect:false*/
 /*global start:false, stop:false ok:false, equal:false, notEqual:false, deepEqual:false*/
 /*global notDeepEqual:false, strictEqual:false, notStrictEqual:false, raises:false*/
-define(['../lib/Observer'], function(Observer) { 'use strict';
+require.config({
+	paths: {
+		Observer    : 'http://localhost/Libraries/Observer/lib/Observer',
+		Lodash      : 'http://localhost/Libraries/lodash/lodash',
+		Subscription: 'http://localhost/Libraries/Observer/lib/Subscription',
+		Topic       : 'http://localhost/Libraries/Observer/lib/Topic'
+	}
+})
+/*
+	======== A Handy Little QUnit Reference ========
+	http://docs.jquery.com/QUnit
 
-	/*
-		======== A Handy Little QUnit Reference ========
-		http://docs.jquery.com/QUnit
+	Test methods:
+		expect(numAssertions)
+		stop(increment)
+		start(decrement)
+	Test assertions:
+		ok(value, [message])
+		equal(actual, expected, [message])
+		notEqual(actual, expected, [message])
+		deepEqual(actual, expected, [message])
+		notDeepEqual(actual, expected, [message])
+		strictEqual(actual, expected, [message])
+		notStrictEqual(actual, expected, [message])
+		raises(block, [expected], [message])
+*/
+require(['Observer'], function (Observer) {
 
-		Test methods:
-			expect(numAssertions)
-			stop(increment)
-			start(decrement)
-		Test assertions:
-			ok(value, [message])
-			equal(actual, expected, [message])
-			notEqual(actual, expected, [message])
-			deepEqual(actual, expected, [message])
-			notDeepEqual(actual, expected, [message])
-			strictEqual(actual, expected, [message])
-			notStrictEqual(actual, expected, [message])
-			raises(block, [expected], [message])
-	*/
 	window.Observer = Observer
-	var subject
+	window.subject = null
 
 	module(null, {
 		setup : function () {
@@ -403,5 +411,4 @@ define(['../lib/Observer'], function(Observer) { 'use strict';
 		}
 		raises(incorrectPriority2, 'Incorrect argument format', 'Bad priority')
 	})
-
 })

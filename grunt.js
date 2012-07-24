@@ -15,7 +15,14 @@ module.exports = function(grunt) { 'use strict';
 			docco: {
 				command: 'docco'+
 				' lib/Observer.js'+
+				' lib/Topic.js'+
+				' lib/Subscription.js'+
 				' test/Observer_test.js',
+				stderr: true,
+				failOnError: true
+			},
+			requirejs : {
+				command : 'cd lib && node ../r.js -o name=Observer out=../dist/Observer.js baseUrl=.',
 				stderr: true,
 				failOnError: true
 			},
@@ -45,31 +52,9 @@ module.exports = function(grunt) { 'use strict';
 			files: '<config:lint.files>',
 			tasks: 'lint qunit'
 		},
-		jshint: {
-			options: {
-				curly: true,
-				eqeqeq: true,
-				immed: true,
-				latedef: true,
-				newcap: true,
-				noarg: true,
-				sub: true,
-				undef: true,
-				eqnull: true,
-				browser: true,
-				asi: true,
-				// setup global variable sets
-				smarttabs:true,
-				debug:false,
-				// allows me to assign values in funny places
-				// e.g. func(var callback = function(){})
-				boss: true
-			},
-			globals: {}
-		},
 		uglify: {}
 	});
 
-	grunt.registerTask('default', 'concat min qunit shell')
+	grunt.registerTask('default', 'concat shell qunit')
 
 };
