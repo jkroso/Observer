@@ -14,15 +14,14 @@ module.exports = function(grunt) { 'use strict';
 		shell: {
 			docco: {
 				command: 'docco'+
-				' lib/SignalTree.js'+
-				' lib/Topic.js'+
+				' lib/Observer.js'+
 				' lib/Subscription.js'+
 				' test/Observer_test.js',
 				stderr: true,
 				failOnError: true
 			},
 			requirejs : {
-				command : 'cd lib && node ../r.js -o name=SignalTree out=../dist/Observer.min.js baseUrl=.',
+				command : 'r.js.cmd -o build.js',
 				stderr: true,
 				failOnError: true
 			},
@@ -55,6 +54,6 @@ module.exports = function(grunt) { 'use strict';
 		uglify: {}
 	});
 
-	grunt.registerTask('default', 'shell qunit')
+	grunt.registerTask('default', 'shell min qunit')
 
 };

@@ -1,14 +1,6 @@
 /*global QUnit:false, module:false, test:false, asyncTest:false, expect:false*/
 /*global start:false, stop:false ok:false, equal:false, notEqual:false, deepEqual:false*/
 /*global notDeepEqual:false, strictEqual:false, notStrictEqual:false, raises:false*/
-require.config({
-    paths: {
-        SignalTree  : 'http://localhost/Libraries/Observer/lib/SignalTree',
-        Lodash      : 'http://localhost/Libraries/lodash/lodash',
-        Subscription: 'http://localhost/Libraries/Observer/lib/Subscription',
-        Topic       : 'http://localhost/Libraries/Observer/lib/Topic'
-    }
-})
 /*
     ======== A Handy Little QUnit Reference ========
     http://docs.jquery.com/QUnit
@@ -27,14 +19,14 @@ require.config({
         notStrictEqual(actual, expected, [message])
         raises(block, [expected], [message])
 */
-require(['SignalTree'], function (Observer) {
+require(['Observer'], function (O) {
 
-    window.Observer = Observer
-    window.subject = null
+    window.Observer = O.constructor
+    window.subject = O
 
     module(null, {
         setup : function () {
-            subject = new Observer.constructor
+            subject = new Observer
         }
     })
 
@@ -74,15 +66,15 @@ require(['SignalTree'], function (Observer) {
         expect(2)
         function Mix () {}
         var mixee = new Mix
-        Observer.constructor.mixin(mixee)
+        Observer.mixin(mixee)
         mixee.on("sub-a", function() {
             ok( true)
         })
         mixee.publish("sub-a" )
 
-        Observer.constructor.methods(Mix.prototype)
+        Observer.methods(Mix.prototype)
         mixee = new Mix
-        Observer.constructor.call(mixee)
+        Observer.call(mixee)
         mixee.on("sub-b", function() {
             ok( true, 'bind methods' )
         })

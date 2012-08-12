@@ -1,6 +1,6 @@
 {
-	"name": "SignalTree",
-	"title": "SignalTree",
+	"name": "Observer",
+	"title": "Observer",
 	"description": "A pub/sub module with hierarchical topic structure",
 	"version": "0.1.0",
 	"homepage": "https://github.com/jkroso/Observer",
@@ -21,9 +21,6 @@
 			"url": "https://github.com/jkroso/Observer/master/LICENSE-MIT"
 		}
 	],
-	"dependencies": {
-		"Topic.js" : true,
-		"Subscription.js" : true
-	},
+	"dependencies": {},
 	"keywords": []
 }
