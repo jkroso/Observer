@@ -20,12 +20,12 @@ define('Subscription',[],function () {
     return Subscription
 });
 /*  
-[Check the tests](../test/SignalTree.html "SignalTree")
-________________________________________________________________________________________________
+[Unit tests](../test/Observer.html)
+___________________________________
 */
 define('Observer',['Subscription'], function (Subscription) { 
     
-    function SignalTree (listeners) {
+    function SignalNode (listeners) {
         // Using discriptor to prevent non-subTopic properties from being enumerable
         Object.defineProperties(this, {
             _listeners : {
@@ -131,7 +131,7 @@ define('Observer',['Subscription'], function (Subscription) {
         return result
     }
 
-    SignalTree.prototype = {
+    SignalNode.prototype = {
         // Retieves a a sub-topic from the descending tree
         get : function (directions, useforce) {
             if ( ! directions )
@@ -145,35 +145,17 @@ define('Observer',['Subscription'], function (Subscription) {
             if ( len ) {
                 do {
                     edge = directions[i++]
-                    if ( topic[edge] instanceof SignalTree )
+                    if ( topic[edge] instanceof SignalNode )
                         topic = topic[edge]
                     else if ( topic[edge] )
                         throw 'namespace clash: '+edge
                     else if ( useforce )
-                        topic = topic[edge] = new SignalTree
+                        topic = topic[edge] = new SignalNode
                     else
                         break
                 } while ( i < len )
             }
             return topic
-        },
-        
-        // Triggers the listeners of just this topic
-        invoke : function (data) {
-            var listeners = this._listeners,
-                len = listeners.length
-            // [Optimized loop](http://jsperf.com/while-vs-if/2 "If guarded do while")
-            if ( len > 0 ) {
-                // ...and trigger each subscription, from highest to lowest priority
-                do {
-                    // Returning false from a handler will prevent any further subscriptions from being notified
-                    if (listeners[--len].trigger(data) === false) {
-                        return false
-                    }
-                } while ( len )
-            }
-            // If we made it this far it means no subscriptions were canceled. We return `true` to let the user know
-            return true
         },
 
         // _Method_ __publish__  
@@ -189,7 +171,7 @@ define('Observer',['Subscription'], function (Subscription) {
                 topic = collect(this, topic.split('.'))
             } else {
                 data = topic
-                topic = this._listeners
+                topic = [this._listeners]
             }
             return invokeList(topic, data)
         },
@@ -299,22 +281,19 @@ define('Observer',['Subscription'], function (Subscription) {
                     throw 'no topic specified'
             }
                     
-            topics.split(' ').forEach(
-                function (topic) {
-                    topic = this.get(topic, false)
-                    if ( topic )
-                        removeListener(topic, callback)
-                },
-                this
-            )
+            topics.split(' ').forEach(function (topic) {
+                topic = this.get(topic, false)
+                if ( topic )
+                    removeListener(topic, callback)
+            }, this)
         }
     }
 
-    SignalTree.methods = function (target) {
-        Object.keys(SignalTree.prototype).forEach(function (key) {
+    SignalNode.methods = function (target) {
+        Object.keys(SignalNode.prototype).forEach(function (key) {
             if ( !target.hasOwnProperty(key) ) {
                 Object.defineProperty(target, key, { 
-                    value: SignalTree.prototype[key], 
+                    value: SignalNode.prototype[key], 
                     writable:true,
                     configurable:true 
                 })
@@ -322,19 +301,19 @@ define('Observer',['Subscription'], function (Subscription) {
         })
         return target
     }
-    SignalTree.mixin = function (target) {
-        SignalTree.call(target)
-        SignalTree.methods(target)
+    SignalNode.mixin = function (target) {
+        SignalNode.call(target)
+        SignalNode.methods(target)
         return target
     }
-    SignalTree.invokeList = invokeList
-    SignalTree.insertListener = insertListener
-    SignalTree.removeListener = removeListener
-    SignalTree.collect = collect
-    SignalTree.branchingCollect = branchingCollect
+    SignalNode.invokeList = invokeList
+    SignalNode.insertListener = insertListener
+    SignalNode.removeListener = removeListener
+    SignalNode.collect = collect
+    SignalNode.branchingCollect = branchingCollect
 
     // Use property definer so it is enumerbale 
-    Object.defineProperty(SignalTree.prototype, 'constructor', { value: SignalTree })
+    Object.defineProperty(SignalNode.prototype, 'constructor', { value: SignalNode })
 
-    return new SignalTree
+    return new SignalNode
 });

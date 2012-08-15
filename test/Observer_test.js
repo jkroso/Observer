@@ -37,7 +37,14 @@ require(['Observer'], function (O) {
                 ok(true, 'message received')
             })
         } catch (e) {
-            ok(false)
+            ok(false, 'failed to subscribe to: "test"')
+        }
+        try {
+            subject.on(function yup () {
+                ok(true, 'message received')
+            })
+        } catch (e) {
+            ok(false, 'failed without a topic')
         }
     })
 
@@ -82,16 +89,17 @@ require(['Observer'], function (O) {
     })
 
     test('Topics are singly invokable', function () {
-        expect( 1 )
+        expect( 2 )
 
-        subject.on( "sub-a-1", function() {
+        subject.on("sub-a-1", function() {
             ok( false, 'this is a super topic and should not be run')
         })
-        subject.on( "sub-a-1.lvl2", function() {
+        subject.on("sub-a-1.lvl2", function() {
             ok( true, 'You found me and I ran correctly when you asked me to' )
         })
 
-        subject.get( "sub-a-1.lvl2" ).invoke()
+        subject.get("sub-a-1.lvl2").publish()
+        subject['sub-a-1'].lvl2.publish()
     })
 
     test( "various ways of unsubscribing a specific function", function() {
