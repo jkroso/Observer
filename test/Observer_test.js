@@ -123,6 +123,11 @@ require(['Observer'], function (O) {
             ok( false, "removed by returned reference" )
             order++
         })
+        var fn3 = subject.on( "unsubscribe", function four () {
+            ok( false, "removed by returned reference from root topic" )
+            order++
+        })
+        subject.unsubscribe.off(fn3)
         subject.off( "unsubscribe", fn )
         subject.off( "unsubscribe", fn2 )
         try {
