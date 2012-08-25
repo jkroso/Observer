@@ -143,6 +143,20 @@ require(['Observer'], function (O) {
             ok( false, "error with invalid topic" )
         }
         subject.publish( "unsubscribe" )
+
+        subject.on('unsubscribe', function four () {
+            ok( false, "clear all" )
+            order++
+        })
+        subject.unsubscribe.off()
+        subject.publish('unsubscribe')
+        
+        subject.on('unsubscribe', function four () {
+            ok( false, "clear all" )
+            order++
+        })
+        subject.off('unsubscribe')
+        subject.publish('unsubscribe')
     })
 
     test('Can unsubscribe anonamous functions while leaving named functions', function () {
