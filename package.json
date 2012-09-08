@@ -1,8 +1,8 @@
 {
 	"name": "Observer",
 	"title": "Observer",
-	"description": "A pub/sub module with hierarchical topic structure",
-	"version": "0.1.0",
+	"description": "A message passing system with all kinds of flexibility. Because its really just a tree data structure with pub/sub methods",
+	"version": "0.5.0",
 	"homepage": "https://github.com/jkroso/Observer",
 	"author": {
 		"name": "Jakeb Rosoman",
@@ -21,6 +21,10 @@
 			"url": "https://github.com/jkroso/Observer/master/LICENSE-MIT"
 		}
 	],
-	"dependencies": {},
+	"dependencies": [
+		"grunt-requirejs",
+		"grunt-docco",
+		"grunt-contrib"
+	],
 	"keywords": []
 }

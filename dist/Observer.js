@@ -1,3 +1,7 @@
+// Observer - v0.5.0 - 2012-09-01
+// https://github.com/jkroso/Observer
+// Copyright (c) 2012 Jakeb Rosoman; Licensed MIT
+
 
 define('Subscription',[],function () { 
 
@@ -19,10 +23,6 @@ define('Subscription',[],function () {
 
     return Subscription
 });
-/*  
-[Unit tests](../test/Observer.html)
-___________________________________
-*/
 define('Observer',['Subscription'], function (Subscription) { 
     
     function SignalNode (listeners) {
