@@ -1,4 +1,4 @@
-// Observer - v0.5.0 - 2012-09-01
+// Observer - v0.5.0 - 2012-10-03
 // https://github.com/jkroso/Observer
 // Copyright (c) 2012 Jakeb Rosoman; Licensed MIT
 
@@ -196,8 +196,13 @@ define('Observer',['Subscription'], function (Subscription) {
                     break
                 case 2:
                     callback = context
-                    context = window
                     priority = 0
+                    if ( typeof topics === 'string' ) {
+                        context = window
+                    } else {
+                        context = topics
+                        topics = ''
+                    }
                     break
                 case 1:
                     callback = topics
@@ -212,7 +217,7 @@ define('Observer',['Subscription'], function (Subscription) {
             var listenerData = new Subscription(context, callback, priority)
 
             // Multiple subscriptions can be set at the same time, in fact it is recommended as they end up sharing memory this way. No need to throw error for incorrect topic since accessing `split` on a non-string will throw an error anyway
-            topics.split(' ').forEach(
+            topics.split(/\s+/).forEach(
                 function (directions) {
                     insertListener(this.get(directions, true), listenerData)
                 },
@@ -254,7 +259,7 @@ define('Observer',['Subscription'], function (Subscription) {
                 }, this)
                 return this.callback.call(this.context, data)
             }
-            topics.split(' ').forEach(
+            topics.split(/\s+/).forEach(
                 function (directions) {
                     var topicObject = this.get(directions, true)
                     listenerData._topics.push(topicObject)
@@ -281,7 +286,7 @@ define('Observer',['Subscription'], function (Subscription) {
                     throw 'Bad topic argument'
             }
                     
-            topics.split(' ').forEach(function (topic) {
+            topics.split(/\s+/).forEach(function (topic) {
                 topic = this.get(topic, false)
                 if ( topic )
                     removeListener(topic, callback)

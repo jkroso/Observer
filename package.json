@@ -24,7 +24,8 @@
 	"dependencies": [
 		"grunt-requirejs",
 		"grunt-docco",
-		"grunt-contrib"
+		"grunt-contrib",
+		"grunt-shell"
 	],
 	"keywords": []
 }

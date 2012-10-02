@@ -67,6 +67,7 @@ module.exports = function(grunt) { 'use strict';
     grunt.loadNpmTasks('grunt-contrib');
     grunt.loadNpmTasks('grunt-requirejs');
     grunt.loadNpmTasks('grunt-docco');
-    grunt.registerTask('default', 'clean requirejs concat min qunit shell')
+    grunt.loadNpmTasks('grunt-shell');
+    grunt.registerTask('default', 'clean requirejs concat min shell qunit')
 
 };
