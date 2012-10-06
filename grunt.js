@@ -31,14 +31,9 @@ module.exports = function(grunt) { 'use strict';
                 'test/Observer_test.js'
             ]
         },
-        clean: ['dist'],
         requirejs: {
-            baseUrl : ".",
-            paths : {
-                Subscription: 'lib/Subscription',
-                Observer: 'lib/Observer'
-            },
-            include:'Observer',
+            baseUrl : "lib",
+            name: 'Observer',
             out : 'dist/Observer.js',
             optimize : "none"
         },
@@ -60,14 +55,13 @@ module.exports = function(grunt) { 'use strict';
         watch: {
             files: '<config:lint.files>',
             tasks: 'lint qunit'
-        },
-        uglify: {}
+        }
     });
 
-    grunt.loadNpmTasks('grunt-contrib');
+    // grunt.loadNpmTasks('grunt-contrib');
     grunt.loadNpmTasks('grunt-requirejs');
-    grunt.loadNpmTasks('grunt-docco');
+    // grunt.loadNpmTasks('grunt-docco');
     grunt.loadNpmTasks('grunt-shell');
-    grunt.registerTask('default', 'clean requirejs concat min shell qunit')
+    grunt.registerTask('default', 'requirejs concat min shell qunit')
 
 };
